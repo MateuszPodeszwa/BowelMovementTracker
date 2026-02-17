@@ -1,0 +1,244 @@
+﻿@using Humanizer
+@using NuGet.Protocol
+@model HomeViewModel
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Home Page";
+    DateTime currentDate = (DateTime)ViewData["RequestedDate"]!;
+    const string datePattern = "ddd, dd MMM yyyy a\\t HH:mm"; // Sun, 15 Feb 2026 at 20:55
+}
+
+<style>
+
+
+    /* --- Week View Boxes --- */
+    .day-scroller {
+        display: flex;
+        overflow-x: auto;
+        gap: 10px;
+        padding: 10px 5px;
+    }
+    .day-scroller::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+    }
+
+    .day-box {
+        min-width: 80px;
+        flex: 1;
+        background: white;
+        border-radius: 12px;
+        padding: 10px;
+        text-align: center;
+        border: 2px solid transparent;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+
+    .day-box.active-day {
+        border-color: #0d6efd; /* Bootstrap Primary */
+        background-color: #e7f1ff;
+    }
+
+    .day-box.past-day {
+        opacity: 0.6;
+        background-color: #e9ecef;
+    }
+
+    .day-num { font-size: 1.5rem; font-weight: 700; line-height: 1; }
+    .day-name { font-size: 0.8rem; text-transform: uppercase; color: #6c757d; }
+    .day-month { font-size: 0.7rem; color: #adb5bd; }
+
+    /* --- iPhone Style Toggles --- */
+    .form-switch .form-check-input {
+        width: 3.5em;
+        height: 1.75em;
+        cursor: pointer;
+    }
+
+    .toggle-label {
+        font-weight: 600;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+    }
+
+    /* --- Bristol Scale Slider --- */
+    .bristol-display {
+        font-weight: bold;
+        font-size: 1.2rem;
+        color: #0d6efd;
+        margin-bottom: 5px;
+    }
+
+    /* Custom Range Slider Styling */
+    input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 30px;
+        width: 30px;
+        border-radius: 50%;
+        background: #0d6efd;
+        margin-top: -12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 8px;
+        cursor: pointer;
+        background: #dee2e6;
+        border-radius: 5px;
+    }
+
+    /* --- Touch Friendly Buttons --- */
+    .btn-touch {
+        padding: 15px;
+        font-size: 1.1rem;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+</style>
+<h1>@TempData["ErrorMessage"]</h1>
+<div class="container-fluid py-3" style="max-width: 800px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h6 class="text-muted mb-0">Current Selection</h6>
+            <h2 class="fw-bold mb-0" id="currentDateDisplay">@currentDate.ToString(datePattern)</h2>
+        </div>
+        <a href="#" class="btn btn-outline-secondary rounded-circle p-3 shadow-sm">
+            <i class="bi bi-calendar-check fs-4"></i>
+        </a>
+    </div>
+
+    @*
+        Date Box Component
+    *@
+    <div class="day-scroller mb-4">
+        
+        @{
+            var howManyDaysFromMondayAreYou = (((int)currentDate.DayOfWeek + 6) % 7 + 0); // Add +1 if you want to start from Sun
+            
+            for(var index = 0; index < 7; index++)
+            {
+                var displayDate = currentDate.AddDays(index - howManyDaysFromMondayAreYou); // Ensures the modal always start from Monday
+                var cssClass = 
+                    (currentDate == displayDate) ? "day-box active-day" : 
+                    (DateTime.UtcNow.CompareTo(displayDate) > 0) ? "day-box" : "day-box past-day";
+                
+                <a href="/@Model.UserIdentifier?date=@displayDate.ToString("yyyy-MM-dd")" class="btn btn-primary @cssClass">
+                    <div class="day-name">@displayDate.ToString("MMM")</div>
+                    <div class="day-num">@displayDate.ToString("dd")</div>
+                    <div class="day-month">@displayDate.ToString("ddd")</div>
+                </a>
+            }
+        }
+
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form method="post" asp-controller="Home" asp-action="create-log" asp-route-id="@Model.UserIdentifier">
+                
+                <input type="hidden" name="DateTime" value="@currentDate" />
+                
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3">
+                        <div class="toggle-label">
+                            <i class="bi bi-cup-hot-fill me-2 text-secondary"></i> Coffee
+                        </div>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="coffeeSwitch" name="WasCoffeeConsumed" value="true">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="toggle-label">
+                            <i class="bi bi-droplet-fill me-2 text-secondary"></i> Milk
+                        </div>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="milkSwitch" name="WasMilkConsumed" value="true">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4 bg-light p-3 rounded-3">
+                    <label for="bristolScale" class="form-label d-block text-center text-muted text-uppercase small ls-1">Bristol Stool Scale</label>
+                    <div class="text-center bristol-display" id="scaleText">Type 4: Normal</div>
+                    <div class="text-center small text-muted mb-3" id="scaleDesc">Smooth and soft, like a sausage or snake</div>
+
+                    <input type="range" class="form-range" min="1" max="7" step="1" id="bristolScale" name="BowelMovementType" value="4" oninput="updateScaleText(this.value)">
+                    <div class="d-flex justify-content-between px-1 text-muted small mt-2">
+                        <span>Hard</span>
+                        <span>Normal</span>
+                        <span>Liquid</span>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="logNotes" class="form-label text-muted text-uppercase small ls-1 fw-bold">
+                        <i class="bi bi-pencil-square me-1"></i> Additional Notes
+                    </label>
+                    <textarea 
+                        class="form-control bg-light border-0 shadow-sm" 
+                        id="logNotes" 
+                        name="Notes" 
+                        rows="5" 
+                        maxlength="512" 
+                        placeholder="Any extra details (optional)...">
+
+                    </textarea>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-12">
+                        <button type="submit" name="action" value="log" class="btn btn-primary w-100 btn-touch shadow-sm">
+                            <i class="bi bi-plus-circle me-2"></i> Log Entry
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="submit" name="action" value="edit" class="btn btn-outline-secondary w-100 btn-touch" disabled>
+                            Edit
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="submit" name="action" value="delete" class="btn btn-outline-danger w-100 btn-touch" disabled>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function updateScaleText(val) {
+        let titleMap = {
+            1: "Type 1: Severe Constipation",
+            2: "Type 2: Mild Constipation",
+            3: "Type 3: Normal",
+            4: "Type 4: Normal",
+            5: "Type 5: Lacking Fibre",
+            6: "Type 6: Mild Diarrhea",
+            7: "Type 7: Severe Diarrhea"
+        };
+
+        let descMap = {
+            1: "Separate hard lumps, like nuts (hard to pass)",
+            2: "Sausage-shaped, but lumpy",
+            3: "Like a sausage but with cracks on its surface",
+            4: "Like a sausage or snake, smooth and soft",
+            5: "Soft blobs with clear cut edges (passed easily)",
+            6: "Fluffy pieces with ragged edges, a mushy stool",
+            7: "Watery, no solid pieces, entirely liquid"
+        };
+
+        document.getElementById('scaleText').innerText = titleMap[val];
+        document.getElementById('scaleDesc').innerText = descMap[val];
+    }
+</script>
+

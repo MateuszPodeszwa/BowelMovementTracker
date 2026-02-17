@@ -1,0 +1,189 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|c:\\users\\podin\\source\\repos\\bowelmovementtracker\\bowelmovementtracker\\views\\home\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|solutionrelative:bowelmovementtracker\\views\\home\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|c:\\users\\podin\\source\\repos\\bowelmovementtracker\\bowelmovementtracker\\views\\users\\details.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|solutionrelative:bowelmovementtracker\\views\\users\\details.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|c:\\users\\podin\\source\\repos\\bowelmovementtracker\\bowelmovementtracker\\controllers\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|solutionrelative:bowelmovementtracker\\controllers\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|c:\\users\\podin\\source\\repos\\bowelmovementtracker\\bowelmovementtracker\\controllers\\homecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|solutionrelative:bowelmovementtracker\\controllers\\homecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|c:\\users\\podin\\source\\repos\\bowelmovementtracker\\bowelmovementtracker\\data\\bowelmovementtrackercontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|solutionrelative:bowelmovementtracker\\data\\bowelmovementtrackercontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|c:\\users\\podin\\source\\repos\\bowelmovementtracker\\bowelmovementtracker\\views\\users\\create.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|solutionrelative:bowelmovementtracker\\views\\users\\create.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|c:\\users\\podin\\source\\repos\\bowelmovementtracker\\bowelmovementtracker\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|solutionrelative:bowelmovementtracker\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|c:\\users\\podin\\source\\repos\\bowelmovementtracker\\bowelmovementtracker\\data\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|solutionrelative:bowelmovementtracker\\data\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|c:\\users\\podin\\source\\repos\\bowelmovementtracker\\bowelmovementtracker\\data\\diary.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|solutionrelative:bowelmovementtracker\\data\\diary.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|c:\\users\\podin\\source\\repos\\bowelmovementtracker\\bowelmovementtracker\\data\\log.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B04458F8-4BA5-7765-5CC2-48E71D902C0A}|BowelMovementTracker\\BowelMovementTracker.csproj|solutionrelative:bowelmovementtracker\\data\\log.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Views\\Home\\Index.cshtml",
+              "RelativeDocumentMoniker": "BowelMovementTracker\\Views\\Home\\Index.cshtml",
+              "ToolTip": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Views\\Home\\Index.cshtml",
+              "RelativeToolTip": "BowelMovementTracker\\Views\\Home\\Index.cshtml",
+              "ViewState": "AgIAAIEAAAAAAAAAAAAAAKEAAABFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-02-15T20:27:34.184Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Details.cshtml",
+              "DocumentMoniker": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Views\\Users\\Details.cshtml",
+              "RelativeDocumentMoniker": "BowelMovementTracker\\Views\\Users\\Details.cshtml",
+              "ToolTip": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Views\\Users\\Details.cshtml",
+              "RelativeToolTip": "BowelMovementTracker\\Views\\Users\\Details.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABgAAAA6AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-02-15T20:25:28.872Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Create.cshtml",
+              "DocumentMoniker": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Views\\Users\\Create.cshtml",
+              "RelativeDocumentMoniker": "BowelMovementTracker\\Views\\Users\\Create.cshtml",
+              "ToolTip": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Views\\Users\\Create.cshtml",
+              "RelativeToolTip": "BowelMovementTracker\\Views\\Users\\Create.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-02-12T20:44:53.114Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "HomeController.cs",
+              "DocumentMoniker": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Controllers\\HomeController.cs",
+              "RelativeDocumentMoniker": "BowelMovementTracker\\Controllers\\HomeController.cs",
+              "ToolTip": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Controllers\\HomeController.cs",
+              "RelativeToolTip": "BowelMovementTracker\\Controllers\\HomeController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-12T20:44:22.686Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\appsettings.json",
+              "RelativeDocumentMoniker": "BowelMovementTracker\\appsettings.json",
+              "ToolTip": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\appsettings.json",
+              "RelativeToolTip": "BowelMovementTracker\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-02-12T20:35:13.795Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "BowelMovementTrackerContext.cs",
+              "DocumentMoniker": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Data\\BowelMovementTrackerContext.cs",
+              "RelativeDocumentMoniker": "BowelMovementTracker\\Data\\BowelMovementTrackerContext.cs",
+              "ToolTip": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Data\\BowelMovementTrackerContext.cs",
+              "RelativeToolTip": "BowelMovementTracker\\Data\\BowelMovementTrackerContext.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-12T20:24:02.509Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "UsersController.cs",
+              "DocumentMoniker": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Controllers\\UsersController.cs",
+              "RelativeDocumentMoniker": "BowelMovementTracker\\Controllers\\UsersController.cs",
+              "ToolTip": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Controllers\\UsersController.cs",
+              "RelativeToolTip": "BowelMovementTracker\\Controllers\\UsersController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-12T20:23:19.369Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Diary.cs",
+              "DocumentMoniker": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Data\\Diary.cs",
+              "RelativeDocumentMoniker": "BowelMovementTracker\\Data\\Diary.cs",
+              "ToolTip": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Data\\Diary.cs",
+              "RelativeToolTip": "BowelMovementTracker\\Data\\Diary.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-12T20:02:16.389Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "Log.cs",
+              "DocumentMoniker": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Data\\Log.cs",
+              "RelativeDocumentMoniker": "BowelMovementTracker\\Data\\Log.cs",
+              "ToolTip": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Data\\Log.cs",
+              "RelativeToolTip": "BowelMovementTracker\\Data\\Log.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-12T20:03:00.606Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "User.cs",
+              "DocumentMoniker": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Data\\User.cs",
+              "RelativeDocumentMoniker": "BowelMovementTracker\\Data\\User.cs",
+              "ToolTip": "C:\\Users\\podin\\source\\repos\\BowelMovementTracker\\BowelMovementTracker\\Data\\User.cs",
+              "RelativeToolTip": "BowelMovementTracker\\Data\\User.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAA5AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-12T19:56:13.531Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
