@@ -10,8 +10,8 @@ public class User
     public Guid UserIdentifier { get; init; }
 
     [Required]
-    public required string UserEmailAddress { internal get; set; }
-    public required string UserPasswordHash { internal get; set; }
+    public required string UserEmailAddress { get; set; }
+    public required string UserPasswordHash { get; set; }
 
     [Required]
     public required Diary Diary { get; init; }

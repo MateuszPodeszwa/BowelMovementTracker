@@ -2,7 +2,6 @@ using BowelMovementTracker.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using BowelMovementTracker.Data;
-using BowelMovementTracker.Data.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace BowelMovementTracker.Controllers;
@@ -11,10 +10,8 @@ public class HomeController(BowelMovementTrackerContext context) : Controller
 {
     // Custom Routing Templates
     [
-        HttpGet("/{id:guid}", Name = "UserHome"),
-        HttpGet("/Home/Index"), 
-        HttpGet("/Home/Index/{id:guid}"), 
-        HttpGet("/")
+        HttpGet("/"), HttpGet("/{id:guid}", Name = "UserHome"),     // Matches all traffic from the Route Base Level
+        HttpGet("/Home/Index"), HttpGet("/Home/Index/{id:guid}")    // For Legacy & Compatibility Only (.../Home/Index/...)
     ]
     public async Task<IActionResult> Index
     (
@@ -22,12 +19,19 @@ public class HomeController(BowelMovementTrackerContext context) : Controller
         [FromQuery(Name = "date")] DateTime? requestedDate
     )
     {
-        // TODO: A more sophisticated check is required. Consider implementing authentication and authorization.
-        if (!userIdentifier.HasValue) return RedirectToAction("Index", "Users");
+        if (!userIdentifier.HasValue) 
+        {
+            TempData["ErrorMessage"] = "User Identifier has not been supplied. Please enter a valid user Identifier.";
+            return View("Error", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+        
         // Ensure there's always a date parameter in URL - Get Current UTC
         if (!requestedDate.HasValue) return Redirect($"/{userIdentifier.Value}?date={DateTime.UtcNow:yyyy-MM-dd}");
+        
         // Ensure the requestedDate has Time. For the logging functionality.
-        if (requestedDate!.Value.TimeOfDay == TimeSpan.Zero) requestedDate = requestedDate.Value.Add(DateTime.Now.TimeOfDay);
+        if (requestedDate!.Value.TimeOfDay == TimeSpan.Zero)
+            requestedDate = requestedDate.Value.Add(DateTime.Now.TimeOfDay);
+        
         // Bag the requested date for view.
         ViewData["RequestedDate"] = requestedDate;
 
@@ -36,17 +40,14 @@ public class HomeController(BowelMovementTrackerContext context) : Controller
             .Include(d => d.Diary)
             .ThenInclude(d => d.Logs)
             .FirstOrDefaultAsync(u => u.UserIdentifier == userIdentifier);
-        
+
         // Validate userIdentifier exist.
         if (user == null)
         {
             // Send it in TempData for UI Error Message
-            TempData["ErrorMessage"] = "User not found";
-            return View(new HomeViewModel
-            {
-                LogItems = []
-            });
-        } 
+            TempData["ErrorMessage"] = "Supplied User Identifier may be incorrect or couldn't be found. Please ensure that the ID parameter is correct.";
+            return View("Error", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
 
         // Build the HomeViewModel for View
         var viewModel = new HomeViewModel
@@ -60,20 +61,21 @@ public class HomeController(BowelMovementTrackerContext context) : Controller
                 DateTime = log.LogDateTime,
                 LastUpdated = log.LogLastUpdated,
                 WasCoffeeConsumed = log.LogWasCoffeeConsumed ?? false,
-                WasMilkConsumed =  log.LogWasMilkConsumed ?? false,
+                WasMilkConsumed = log.LogWasMilkConsumed ?? false,
                 Notes = log.LogNotes,
-                
-            }).OrderByDescending(l => l.LastUpdated).ToList() ?? [],
+
+            }).Where(item => item.DateTime!.Value.Date == requestedDate.Value.Date).OrderByDescending(property => property.DateTime).ToList() ?? [],
         };
         
         return View(viewModel);
+        
     }
 
     public IActionResult Privacy()
     {
         return View();
     }
-
+    
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
@@ -81,12 +83,14 @@ public class HomeController(BowelMovementTrackerContext context) : Controller
     }
 
     // Form sends userIdentifier as the asp-net-routeid to ensure right user gets updated.
-    [HttpPost("Home/create-log/{id:guid}")]
+    [HttpPost("Home/create-log/{id:guid}/{logid:guid?}")]
     [ValidateAntiForgeryToken, ActionName("create-log")]
     // The Form on the Home/Index page can Update/Delete/Create
     // TODO: Implement Delete/Update functionalities.
     public async Task<IActionResult> UpdateLogEntry(
         [FromRoute(Name = "id")] Guid userIdentifier,
+        [FromRoute(Name = "logid")] Guid? logIdentifier, // Used only for Updating & Deleting
+        [FromForm] string submitAction,
         [Bind("BowelMovementType,DateTime,WasCoffeeConsumed,WasMilkConsumed,Notes")] LogItemsViewModel model
         // DateTime is not as important here, it can be edited by user. Due to the design circumstances.
         // The Date Picker input is hidden, and instead the input take the date URL parameter.
@@ -103,31 +107,73 @@ public class HomeController(BowelMovementTrackerContext context) : Controller
         
         // In the very rare occasions. The Diary must be created with the User Object.
         if (user?.Diary == null) return NotFound("User or Diary not found.");
-        
-        // Manually Map the LOG Object. Mind the DateTime fields.
-        var newLog = new Log
+            
+        // Find a specific log to delete/update, that is equal to logIdentifier and belongs to userIdentifier
+        Log? log = user.Diary.Logs?.FirstOrDefault(log => log.LogIdentifier == logIdentifier);
+
+        switch (submitAction?.ToLower().Trim())
         {
-            LogBowelMovementType = model.BowelMovementType,
-            LogWasCoffeeConsumed = model.WasCoffeeConsumed,
-            LogWasMilkConsumed = model.WasMilkConsumed,
-            LogNotes = model.Notes,
+            case "delete":
+            {
+                if (log == null) return NotFound("Log not found.");
+
+                context.Remove(log);
+                await context.SaveChangesAsync();
+
+                return RedirectToRoute("UserHome", new { id = userIdentifier });
+            }
+            case "edit":
+            {
+                // TODO: Implement more sophisticated error handling.
+                if (log == null) return NotFound("Log not found.");
+
+                log.LogBowelMovementType = model.BowelMovementType;
+                log.LogWasCoffeeConsumed = model.WasCoffeeConsumed;
+                log.LogWasMilkConsumed = model.WasMilkConsumed;
+                log.LogNotes = model.Notes;
+                log.LogLastUpdated = DateTime.UtcNow;
+
+                context.Update(log);
+                await context.SaveChangesAsync();
+
+                return RedirectToRoute("UserHome", new { 
+                    id = userIdentifier, 
+                    date = log?.LogDateTime 
+                });
+            }
+            case "log":
+            {
+                // Manually Map the LOG Object. Mind the DateTime fields.
+                var newLog = new Log
+                {
+                    LogBowelMovementType = model.BowelMovementType,
+                    LogWasCoffeeConsumed = model.WasCoffeeConsumed,
+                    LogWasMilkConsumed = model.WasMilkConsumed,
+                    LogNotes = model.Notes,
+
+                    LogDateTime =
+                        model.DateTime ??
+                        DateTime.UtcNow, // Log Creation Date (Cannot be changed on this side, only UI - It marks the log date from URL Date property)
+                    LogLastUpdated =
+                        DateTime.UtcNow, // Updatable each time on change, mainly for the Log-Logging to the system.
+
+                    // Because of the relationships, these must be supplied by query user object.
+                    Diary = user.Diary,
+                    LogDiaryIdentifier = user.Diary.DiaryIdentifier,
+                };
+
+                context.Add(newLog);
+                await context.SaveChangesAsync();
             
-            LogDateTime = model.DateTime,       // Log Creation Date (Cannot be changed on this side, only UI - It marks the log date from URL Date property)
-            LogLastUpdated = DateTime.UtcNow,   // Updatable each time on change, mainly for the Log-Logging to the system.
-            
-            // Because of the relationships, these must be supplied by query user object.
-            Diary = user.Diary,
-            LogDiaryIdentifier = user.Diary.DiaryIdentifier,
-        };
+                // Return to exactly the same page.
+                // TODO: Consider implementing TempData with information that the LOG has been create/updated/deleted - Will be displayed as UI component.
+                return RedirectToRoute("UserHome", new { 
+                    id = userIdentifier, 
+                    date = newLog.LogDateTime?.ToString("yyyy-MM-dd") 
+                });
+            }
+        }
         
-        context.Add(newLog);
-        await context.SaveChangesAsync();
-        
-        // Return to exactly the same page.
-        // TODO: Consider implementing TempData with information that the LOG has been create/updated/deleted - Will be displayed as UI component.
-        return RedirectToRoute("UserHome", new { 
-            id = userIdentifier, 
-            date = newLog.LogDateTime?.ToString("yyyy-MM-dd") 
-        });
+        return BadRequest("Invalid action for an existing log.");
     }
 }

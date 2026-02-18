@@ -27,7 +27,8 @@
             <td>
                 <a asp-action="Edit" asp-route-id="@item.UserIdentifier">Edit</a> |
                 <a asp-action="Details" asp-route-id="@item.UserIdentifier">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.UserIdentifier">Delete</a>
+                <a asp-action="Delete" asp-route-id="@item.UserIdentifier">Delete</a>   |
+                <a asp-controller="Home" asp-action="Index" asp-route-id="@item.UserIdentifier">Log Page</a>
             </td>
         </tr>
 }

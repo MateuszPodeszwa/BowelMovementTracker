@@ -1,12 +1,26 @@
-﻿@using Humanizer
-@using NuGet.Protocol
+﻿@using System.Text.Json
+@using BowelMovementTracker.Data.Enums
 @model HomeViewModel
 
 @{
     Layout = "_Layout";
     ViewData["Title"] = "Home Page";
+    // URL "Date" Property
     DateTime currentDate = (DateTime)ViewData["RequestedDate"]!;
     const string datePattern = "ddd, dd MMM yyyy a\\t HH:mm"; // Sun, 15 Feb 2026 at 20:55
+    var listOfLogs = Model.LogItems;
+    
+    // Matches correct LOG with the currentDate URL Property. If not found, then creates a "dummy" object ready to be populated.
+    var currentlySelectedLogItem = listOfLogs.FirstOrDefault(log => log.DateTime == currentDate) ?? new LogItemsViewModel
+    {
+        BowelMovementType = (BristolStoolScale)4,
+        WasCoffeeConsumed = false,
+        WasMilkConsumed = false,
+        Notes = "",
+        DateTime = currentDate,
+        LastUpdated =  currentDate,
+        
+    } ?? listOfLogs.FirstOrDefault();
 }
 
 <style>
@@ -19,6 +33,7 @@
         gap: 10px;
         padding: 10px 5px;
     }
+
     .day-scroller::-webkit-scrollbar {
         display: none; /* Chrome/Safari */
     }
@@ -31,7 +46,7 @@
         padding: 10px;
         text-align: center;
         border: 2px solid transparent;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         cursor: pointer;
         transition: all 0.2s ease;
         user-select: none;
@@ -47,9 +62,22 @@
         background-color: #e9ecef;
     }
 
-    .day-num { font-size: 1.5rem; font-weight: 700; line-height: 1; }
-    .day-name { font-size: 0.8rem; text-transform: uppercase; color: #6c757d; }
-    .day-month { font-size: 0.7rem; color: #adb5bd; }
+    .day-num {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .day-name {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        color: #6c757d;
+    }
+
+    .day-month {
+        font-size: 0.7rem;
+        color: #adb5bd;
+    }
 
     /* --- iPhone Style Toggles --- */
     .form-switch .form-check-input {
@@ -81,7 +109,7 @@
         border-radius: 50%;
         background: #0d6efd;
         margin-top: -12px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     }
 
     input[type=range]::-webkit-slider-runnable-track {
@@ -100,6 +128,7 @@
         font-weight: 600;
     }
 </style>
+
 <h1>@TempData["ErrorMessage"]</h1>
 <div class="container-fluid py-3" style="max-width: 800px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -116,18 +145,19 @@
         Date Box Component
     *@
     <div class="day-scroller mb-4">
-        
+
         @{
             var howManyDaysFromMondayAreYou = (((int)currentDate.DayOfWeek + 6) % 7 + 0); // Add +1 if you want to start from Sun
-            
-            for(var index = 0; index < 7; index++)
+
+            for (var index = 0; index < 7; index++)
             {
                 var displayDate = currentDate.AddDays(index - howManyDaysFromMondayAreYou); // Ensures the modal always start from Monday
-                var cssClass = 
-                    (currentDate == displayDate) ? "day-box active-day" : 
+                var cssClass =
+                    (currentDate == displayDate) ? "day-box active-day" :
                     (DateTime.UtcNow.CompareTo(displayDate) > 0) ? "day-box" : "day-box past-day";
-                
-                <a href="/@Model.UserIdentifier?date=@displayDate.ToString("yyyy-MM-dd")" class="btn btn-primary @cssClass">
+
+                <a href="/@Model.UserIdentifier?date=@displayDate.ToString("yyyy-MM-dd")"
+                   class="btn btn-primary @cssClass">
                     <div class="day-name">@displayDate.ToString("MMM")</div>
                     <div class="day-num">@displayDate.ToString("dd")</div>
                     <div class="day-month">@displayDate.ToString("ddd")</div>
@@ -137,19 +167,39 @@
 
     </div>
 
+    @{
+        <div class="d-grid gap-2">
+            @{ var count = 0; }
+
+            @foreach (var item in listOfLogs)
+            {
+                var textPrint = $"Entry: {++count:00} [{item.Identifier.ToString().Split('-')[0].ToUpper()}] at {item.DateTime!.Value:HH:mm:ss} Notes: {item.Notes ?? ""}";
+                <a asp-route="UserHome"
+                   asp-route-id="@Model.UserIdentifier"
+                   asp-route-date="@item.DateTime?.ToString("yyyy-MM-ddTHH:mm:ss")"
+                   class="btn btn-dark rounded-3 px-4 py-3 shadow-sm fw-semibold text-start @(TimeSpan.Compare(item.DateTime!.Value.TimeOfDay, currentlySelectedLogItem!.DateTime!.Value.TimeOfDay) == 0 ? "active" : "") "
+                   type="button">
+                    @textPrint
+                </a>
+            }
+        </div>}
+
+
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-4">
-            <form method="post" asp-controller="Home" asp-action="create-log" asp-route-id="@Model.UserIdentifier">
-                
-                <input type="hidden" name="DateTime" value="@currentDate" />
-                
+            <form method="post" asp-controller="Home" asp-action="create-log" asp-route-id="@Model.UserIdentifier" asp-route-logid="@currentlySelectedLogItem?.Identifier">
+
+                <input type="hidden" name="DateTime" value="@currentDate"/>
+
                 <div class="mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3">
                         <div class="toggle-label">
                             <i class="bi bi-cup-hot-fill me-2 text-secondary"></i> Coffee
                         </div>
                         <div class="form-check form-switch m-0">
-                            <input class="form-check-input" type="checkbox" role="switch" id="coffeeSwitch" name="WasCoffeeConsumed" value="true">
+                            <input class="form-check-input" type="checkbox" role="switch" id="coffeeSwitch"
+                                   name="WasCoffeeConsumed" value="true"
+                                   checked="@(currentlySelectedLogItem is { WasCoffeeConsumed: true })">
                         </div>
                     </div>
 
@@ -158,62 +208,97 @@
                             <i class="bi bi-droplet-fill me-2 text-secondary"></i> Milk
                         </div>
                         <div class="form-check form-switch m-0">
-                            <input class="form-check-input" type="checkbox" role="switch" id="milkSwitch" name="WasMilkConsumed" value="true">
+                            <input class="form-check-input" type="checkbox" role="switch" id="milkSwitch"
+                                   name="WasMilkConsumed" value="true"
+                                   checked="@(currentlySelectedLogItem is { WasMilkConsumed: true })">
                         </div>
                     </div>
                 </div>
 
                 <div class="mb-4 bg-light p-3 rounded-3">
-                    <label for="bristolScale" class="form-label d-block text-center text-muted text-uppercase small ls-1">Bristol Stool Scale</label>
-                    <div class="text-center bristol-display" id="scaleText">Type 4: Normal</div>
-                    <div class="text-center small text-muted mb-3" id="scaleDesc">Smooth and soft, like a sausage or snake</div>
+                    <label for="bristolScale" class="form-label d-block text-center text-muted text-uppercase small ls-1">
+                        Bristol Stool Scale
+                    </label>
+    
+                    <div class="text-center fw-bold fs-5 bristol-display mb-1" id="scaleText"></div>
+                    <div class="text-center small text-muted mb-3" id="scaleDesc"></div>
 
-                    <input type="range" class="form-range" min="1" max="7" step="1" id="bristolScale" name="BowelMovementType" value="4" oninput="updateScaleText(this.value)">
+                    <input type="range" class="form-range" min="1" max="7" step="1" id="bristolScale"
+                           name="BowelMovementType" 
+                           value="@((int?)currentlySelectedLogItem?.BowelMovementType ?? 4)" 
+                           oninput="updateScaleText(this.value)">
+           
                     <div class="d-flex justify-content-between px-1 text-muted small mt-2">
                         <span>Hard</span>
                         <span>Normal</span>
                         <span>Liquid</span>
                     </div>
                 </div>
-                
+
                 <div class="mb-4">
                     <label for="logNotes" class="form-label text-muted text-uppercase small ls-1 fw-bold">
                         <i class="bi bi-pencil-square me-1"></i> Additional Notes
                     </label>
-                    <textarea 
-                        class="form-control bg-light border-0 shadow-sm" 
-                        id="logNotes" 
-                        name="Notes" 
-                        rows="5" 
-                        maxlength="512" 
-                        placeholder="Any extra details (optional)...">
-
-                    </textarea>
+                    <textarea
+                        class="form-control bg-light border-0 shadow-sm"
+                        id="logNotes"
+                        name="Notes"
+                        rows="5"
+                        maxlength="512"
+                        placeholder="Any extra details (optional)...">@(currentlySelectedLogItem?.Notes ?? "")</textarea>
                 </div>
 
                 <div class="row g-2">
-                    <div class="col-12">
-                        <button type="submit" name="action" value="log" class="btn btn-primary w-100 btn-touch shadow-sm">
-                            <i class="bi bi-plus-circle me-2"></i> Log Entry
-                        </button>
-                    </div>
-                    <div class="col-6">
-                        <button type="submit" name="action" value="edit" class="btn btn-outline-secondary w-100 btn-touch" disabled>
-                            Edit
-                        </button>
-                    </div>
-                    <div class="col-6">
-                        <button type="submit" name="action" value="delete" class="btn btn-outline-danger w-100 btn-touch" disabled>
-                            Delete
-                        </button>
-                    </div>
+                    @if ((listOfLogs.FirstOrDefault(log => log.DateTime == currentDate) == null))
+                    {
+                        <div class="col-12">
+                            <button type="submit" name="submitAction" value="log"
+                                    class="btn btn-primary w-100 btn-touch shadow-sm">
+                                <i class="bi bi-plus-circle me-2"></i> Log Entry
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-6">
+                            <button type="submit" name="submitAction" value="edit"
+                                    class="btn btn-primary w-100 btn-touch shadow-sm">
+                                <i class="bi bi-plus-circle me-2"></i> Update Entry
+                            </button>
+                        </div>
+                        
+                        <div class="col-6">
+                            <button type="submit" name="submitAction" value="delete"
+                                    class="btn btn-outline-danger w-100 btn-touch">
+                                Delete
+                            </button>
+                        </div>
+                    }
                 </div>
 
             </form>
         </div>
     </div>
-
 </div>
+
+@section Scripts {
+    <script>
+        function scheduleNextMinuteRefresh() {
+            const now = new Date();
+
+            // Calculate milliseconds remaining until the next minute (60 seconds)
+            const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+
+            // Set the timeout to fire exactly when the new minute starts
+            setTimeout(function () {
+                window.location.reload();
+            }, msUntilNextMinute);
+        }
+
+        // Start the countdown as soon as the page loads
+        scheduleNextMinuteRefresh();
+    </script>
+}
 
 <script>
     function updateScaleText(val) {
@@ -237,8 +322,17 @@
             7: "Watery, no solid pieces, entirely liquid"
         };
 
+        // Update the HTML elements with the text from our maps
         document.getElementById('scaleText').innerText = titleMap[val];
         document.getElementById('scaleDesc').innerText = descMap[val];
     }
+
+    // THE MISSING PIECE: 
+    // Wait for the HTML to load, grab the initial value from the Razor-rendered slider, 
+    // and run the function once so the text matches the starting position.
+    document.addEventListener("DOMContentLoaded", function() {
+        let sliderElement = document.getElementById("bristolScale");
+        updateScaleText(sliderElement.value);
+    });
 </script>
 
