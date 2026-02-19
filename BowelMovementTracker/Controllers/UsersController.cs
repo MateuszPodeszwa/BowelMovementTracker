@@ -42,7 +42,7 @@ public class UsersController(BowelMovementTrackerContext context) : Controller
         {
             new Claim(ClaimTypes.NameIdentifier, user.UserIdentifier.ToString()),
             new Claim(ClaimTypes.Email, user.UserEmailAddress),
-            new Claim(ClaimTypes.Name, user.UserIdentifier.ToString())
+            new Claim(ClaimTypes.Name, user.UserEmailAddress)
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
