@@ -10,6 +10,8 @@ namespace BowelMovementTracker
         {
             var builder = WebApplication.CreateBuilder(args);
             
+            builder.WebHost.UseStaticWebAssets();
+            
             builder.Services.AddDbContext<BowelMovementTrackerContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("BowelMovementTrackerContext") ?? throw new InvalidOperationException("Connection string 'BowelMovementTrackerContext' not found.")));
 
