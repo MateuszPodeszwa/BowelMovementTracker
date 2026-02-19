@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using BowelMovementTracker.Data;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace BowelMovementTracker
 {
@@ -16,6 +17,19 @@ namespace BowelMovementTracker
                 options.UseSqlServer(builder.Configuration.GetConnectionString("BowelMovementTrackerContext") ?? throw new InvalidOperationException("Connection string 'BowelMovementTrackerContext' not found.")));
 
             builder.Services.AddControllersWithViews();
+            
+            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options =>
+                {
+                    options.LoginPath = "/Login"; // Update this to your custom login route
+                    options.ExpireTimeSpan = TimeSpan.FromDays(7); // How long the cookie lasts
+                    options.SlidingExpiration = true; // Refresh cookie expiration on each request
+                    options.Cookie.HttpOnly = true; // Prevent JavaScript access to the cookie
+                    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+                        ? CookieSecurePolicy.SameAsRequest
+                        : CookieSecurePolicy.Always; // Require HTTPS in production
+                    options.Cookie.SameSite = SameSiteMode.Strict; // Prevent CSRF attacks
+                });
 
             var app = builder.Build();
 
@@ -45,6 +59,7 @@ namespace BowelMovementTracker
             app.UseHttpsRedirection();
             app.UseRouting();
 
+            app.UseAuthentication(); 
             app.UseAuthorization();
 
             app.MapStaticAssets();

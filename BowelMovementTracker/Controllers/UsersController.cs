@@ -1,147 +1,65 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BowelMovementTracker.Data;
+using BowelMovementTracker.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Claims;
 
 namespace BowelMovementTracker.Controllers;
 
+[Authorize] // Secures all actions in this controller by default
 public class UsersController(BowelMovementTrackerContext context) : Controller
 {
-    // GET: Users
-    public async Task<IActionResult> Index()
+    [AllowAnonymous] // Allows unauthenticated users to see the login page
+    [HttpGet("/Login", Name = "LoginRoute")] 
+    public IActionResult Login() => View();
+
+    [AllowAnonymous]
+    [HttpPost("/Login", Name = "LoginRoute"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> LoginUser([Bind("UserEmailAddress,UserPasswordHash"), FromForm] LoginViewModel boundUser)
     {
-        return View(await context.User.ToListAsync());
-    }
-
-    // GET: Users/Details/5
-    [HttpGet]
-    public async Task<IActionResult> Details( [FromRoute] Guid? id )
-    {
-        if (id == null) return NotFound();
-
-        var user = await context.User.FirstOrDefaultAsync(m => m.UserIdentifier == id);
-
-        if (user == null) return NotFound();
-
-        return View(user);
-    }
-
-    // GET: Users/Create
-    [HttpGet] public IActionResult Create() => View();
-
-    [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("UserEmailAddress"), FromForm] User boundUser)
-    {
-        // 1. Remove required fields the form doesn't send
-        ModelState.Remove("UserPasswordHash");
+        // If using the dedicated LoginViewModel, you shouldn't need to remove "Diary" 
+        // from ModelState, but I have kept your validation flow intact.
         ModelState.Remove("Diary");
 
-        // 2. Hard-check the email so the DB doesn't crash if the HTML form is wrong
-        if (string.IsNullOrWhiteSpace(boundUser.UserEmailAddress))
-        {
-            ModelState.AddModelError("UserEmailAddress", "Email is required.");
-        }
-
-        if (!ModelState.IsValid) return View(boundUser);
-
-        // 3. Build the object tree
-        var newUser = new User
-        {
-            UserEmailAddress = boundUser.UserEmailAddress, 
-            UserPasswordHash = Guid.NewGuid().GetHashCode().ToString(),
+        if (!ModelState.IsValid) return View("Login", boundUser);
         
-            Diary = new Diary
-            {
-                Logs = [],
-                User = null!, // Satisfies C# 'required', prevents EF Core duplication crash
-                DiaryUserIdentifier = Guid.Empty // Satisfies C# 'required', EF Core overwrites this automatically
-            }
-        };
+        User? user = await context.User.FirstOrDefaultAsync(m => 
+            (m.UserEmailAddress == boundUser.UserEmailAddress) && 
+            (m.UserPasswordHash == boundUser.UserPasswordHash));
 
-        context.Add(newUser);
-        await context.SaveChangesAsync();
-
-        return RedirectToAction(nameof(Index));
-    }
-
-    // GET: Users/Edit/5
-    [HttpGet]
-    public async Task<IActionResult> Edit( [FromRoute] Guid? id)
-    {
-        if (id == null) return NotFound();
-
-        var user = await context.User.FindAsync(id);
-
-        if (user == null) return NotFound();
-            
-        return View(user);
-    }
-
-    // POST: Users/Edit/5
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(Guid id, [Bind("UserIdentifier,UserEmailAddress")] User user)
-    {
-        if (id != user.UserIdentifier)
-        {
-            return NotFound();
-        }
-
-        if (ModelState.IsValid)
-        {
-            try
-            {
-                context.Update(user);
-                await context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(user.UserIdentifier))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-            return RedirectToAction(nameof(Index));
-        }
-        return View(user);
-    }
-
-    // GET: Users/Delete/5
-    public async Task<IActionResult> Delete(Guid? id)
-    {
-        if (id == null)
-        {
-            return NotFound();
-        }
-
-        var user = await context.User
-            .FirstOrDefaultAsync(m => m.UserIdentifier == id);
         if (user == null)
         {
-            return NotFound();
+            // It is safer to use a generic error message to prevent email enumeration
+            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+            return View("Login", boundUser);
         }
+        
+        // --- AUTHENTICATION LOGIC ---
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.UserIdentifier.ToString()),
+            new Claim(ClaimTypes.Email, user.UserEmailAddress),
+            new Claim(ClaimTypes.Name, user.UserEmailAddress)
+        };
 
-        return View(user);
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+
+        // This issues the authentication cookie to the user's browser
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        // -----------------------------
+
+        return RedirectToRoute("UserHome", new { id = user.UserIdentifier });
     }
 
-    // POST: Users/Delete/5
-    [HttpPost, ActionName("Delete")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(Guid id)
+    [HttpPost]
+    public async Task<IActionResult> Logout()
     {
-        var user = await context.User.FindAsync(id);
-        if (user != null)
-        {
-            context.User.Remove(user);
-        }
-
-        await context.SaveChangesAsync();
-        return RedirectToAction(nameof(Index));
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return RedirectToAction("Login");
     }
 
     private bool UserExists(Guid id)

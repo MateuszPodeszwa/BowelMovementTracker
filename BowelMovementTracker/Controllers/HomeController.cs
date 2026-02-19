@@ -1,7 +1,9 @@
 using BowelMovementTracker.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using System.Security.Claims;
 using BowelMovementTracker.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace BowelMovementTracker.Controllers;
@@ -10,6 +12,7 @@ public class HomeController(BowelMovementTrackerContext context) : Controller
 {
     // Custom Routing Templates
     [
+        Authorize,
         HttpGet("/"), HttpGet("/{id:guid}", Name = "UserHome"),     // Matches all traffic from the Route Base Level
         HttpGet("/Home/Index"), HttpGet("/Home/Index/{id:guid}")    // For Legacy & Compatibility Only (.../Home/Index/...)
     ]
@@ -19,10 +22,23 @@ public class HomeController(BowelMovementTrackerContext context) : Controller
         [FromQuery(Name = "date")] DateTime? requestedDate
     )
     {
-        if (!userIdentifier.HasValue) 
+        // Authorization and Security
+        // Retrieve the logged-in user's ID from the cookie claims
+        var loggedInUserIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(loggedInUserIdStr, out Guid loggedInUserId))
         {
-            TempData["ErrorMessage"] = "User Identifier has not been supplied. Please enter a valid user Identifier.";
-            return View("Error", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            // Safety catch: if the cookie is malformed or missing the ID claim
+            return Unauthorized(); 
+        }
+        if (!userIdentifier.HasValue)
+        {
+            // Preserve the requestedDate query parameter if they provided one
+            return RedirectToRoute("UserHome", new { id = loggedInUserId, date = requestedDate });
+        }
+        // If an ID was provided in the URL, verify it matches the logged-in user
+        if (userIdentifier.Value != loggedInUserId)
+        {
+            return Forbid(); // HTTP 403: They are trying to view someone else's dashboard
         }
         
         // Ensure there's always a date parameter in URL - Get Current UTC
@@ -71,12 +87,13 @@ public class HomeController(BowelMovementTrackerContext context) : Controller
         
     }
 
+    [AllowAnonymous]
     public IActionResult Privacy()
     {
         return View();
     }
     
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    [AllowAnonymous, ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
@@ -84,7 +101,7 @@ public class HomeController(BowelMovementTrackerContext context) : Controller
 
     // Form sends userIdentifier as the asp-net-routeid to ensure right user gets updated.
     [HttpPost("Home/create-log/{id:guid}/{logid:guid?}")]
-    [ValidateAntiForgeryToken, ActionName("create-log")]
+    [Authorize, ValidateAntiForgeryToken, ActionName("create-log")]
     // The Form on the Home/Index page can Update/Delete/Create
     // TODO: Implement Delete/Update functionalities.
     public async Task<IActionResult> UpdateLogEntry(
