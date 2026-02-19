@@ -23,6 +23,12 @@ namespace BowelMovementTracker
                 {
                     options.LoginPath = "/Login"; // Update this to your custom login route
                     options.ExpireTimeSpan = TimeSpan.FromDays(7); // How long the cookie lasts
+                    options.SlidingExpiration = true; // Refresh cookie expiration on each request
+                    options.Cookie.HttpOnly = true; // Prevent JavaScript access to the cookie
+                    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+                        ? CookieSecurePolicy.SameAsRequest
+                        : CookieSecurePolicy.Always; // Require HTTPS in production
+                    options.Cookie.SameSite = SameSiteMode.Strict; // Prevent CSRF attacks
                 });
 
             var app = builder.Build();
