@@ -43,6 +43,6 @@ If you find this tool useful, I would highly appreciate any donations to help fu
 
 Additionally, if you need any help setting up the database, deploying the app, or configuring your server, please reach out to me here:
 
-🔗 **[Mateusz Podeszwa | Software, Computer Designs, Tutorials | Patreon](https://www.patreon.com/)**
+🔗 **[Mateusz Podeszwa | Software, Computer Designs, Tutorials | Patreon](https://www.patreon.com/mateuszpodeszwa)**
 
 Thank you for checking out the project!
