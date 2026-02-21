@@ -25,16 +25,19 @@ public class HomeController(BowelMovementTrackerContext context) : Controller
         // Authorization and Security
         // Retrieve the logged-in user's ID from the cookie claims
         var loggedInUserIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
         if (!Guid.TryParse(loggedInUserIdStr, out Guid loggedInUserId))
         {
             // Safety catch: if the cookie is malformed or missing the ID claim
             return Unauthorized(); 
         }
+        
         if (!userIdentifier.HasValue)
         {
             // Preserve the requestedDate query parameter if they provided one
             return RedirectToRoute("UserHome", new { id = loggedInUserId, date = requestedDate });
         }
+        
         // If an ID was provided in the URL, verify it matches the logged-in user
         if (userIdentifier.Value != loggedInUserId)
         {
