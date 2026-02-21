@@ -1,0 +1,241 @@
+﻿@model AnalyticsViewModel?
+@{
+    ViewData["Title"] = "Analytics & Insights";
+    // We will use dummy data in the JavaScript below, but I have structured 
+    // it so you can easily inject your C# Model data using Json.Serialize() later.
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold mb-0">Health Analytics</h2>
+            <p class="text-body-secondary mb-0">Patient bowel movement patterns and dietary correlations.</p>
+        </div>
+        <div class="btn-group shadow-sm" role="group">
+            <input type="radio" class="btn-check" name="timeSpan" id="btn7" autocomplete="off" checked>
+            <label class="btn btn-outline-primary" for="btn7">7 Days</label>
+
+            <input type="radio" class="btn-check" name="timeSpan" id="btn30" autocomplete="off">
+            <label class="btn btn-outline-primary" for="btn30">30 Days</label>
+
+            <input type="radio" class="btn-check" name="timeSpan" id="btnAll" autocomplete="off">
+            <label class="btn btn-outline-primary" for="btnAll">All Time</label>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm bg-body-tertiary h-100 rounded-4">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Total Logs</h6>
+                    <h2 class="display-5 fw-bold text-primary mb-0">24</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm bg-body-tertiary h-100 rounded-4">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Avg Bristol Score</h6>
+                    <h2 class="display-5 fw-bold text-success mb-0">4.2</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm bg-body-tertiary h-100 rounded-4">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Avg Gap (Hours)</h6>
+                    <h2 class="display-5 fw-bold text-warning mb-0">22.5</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm bg-body-tertiary h-100 rounded-4">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Coffee Days</h6>
+                    <h2 class="display-5 fw-bold text-danger mb-0">65%</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm bg-body-tertiary rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold mb-4">Bristol Scale Timeline</h5>
+                    <div style="height: 300px;">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-4">
+            <div class="card border-0 shadow-sm bg-body-tertiary rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold mb-4">Stool Type Distribution</h5>
+                    <div style="height: 300px; display: flex; justify-content: center;">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-md-6">
+            <div class="card border-0 shadow-sm bg-body-tertiary rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold mb-4">Dietary Impact on Consistency</h5>
+                    <p class="small text-body-secondary mb-3">Average Bristol Stool Scale score when consuming specific items.</p>
+                    <div style="height: 250px;">
+                        <canvas id="dietaryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="card border-0 shadow-sm bg-body-tertiary rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold mb-4">Logging Frequency by Day</h5>
+                    <p class="small text-body-secondary mb-3">Total number of entries recorded per day of the week.</p>
+                    <div style="height: 250px;">
+                        <canvas id="frequencyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            // Centralise theme colours so charts adapt to dark mode nicely
+            const gridColor = 'rgba(108, 117, 125, 0.2)'; 
+            const textColor = '#6c757d'; 
+
+            // ==========================================
+            // CHART 1: TIMELINE (Line Chart)
+            // ==========================================
+            // Replace these arrays with Html.Raw(Json.Serialize(Model.Dates)) etc.
+            const timelineDates = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const timelineScores = [4, 3, 5, 4, 6, 4, 3]; 
+
+            new Chart(document.getElementById('timelineChart'), {
+                type: 'line',
+                data: {
+                    labels: timelineDates,
+                    datasets: [{
+                        label: 'Bristol Score',
+                        data: timelineScores,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#0d6efd',
+                        pointRadius: 5,
+                        fill: true,
+                        tension: 0.3 // Smooth curves
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 1,
+                            max: 7,
+                            grid: { color: gridColor },
+                            ticks: { color: textColor, stepSize: 1 }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: textColor }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            // ==========================================
+            // CHART 2: DISTRIBUTION (Doughnut Chart)
+            // ==========================================
+            const scaleLabels = ['Type 1-2 (Constipated)', 'Type 3-4 (Normal)', 'Type 5-7 (Diarrhoea)'];
+            const scaleCounts = [3, 15, 6]; 
+
+            new Chart(document.getElementById('distributionChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: scaleLabels,
+                    datasets: [{
+                        data: scaleCounts,
+                        backgroundColor: ['#ffc107', '#198754', '#dc3545'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: textColor } }
+                    }
+                }
+            });
+
+            // ==========================================
+            // CHART 3: DIETARY IMPACT (Bar Chart)
+            // ==========================================
+            new Chart(document.getElementById('dietaryChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Coffee Only', 'Milk Only', 'Both', 'Neither'],
+                    datasets: [{
+                        label: 'Average Score',
+                        data: [5.2, 3.8, 6.1, 4.0],
+                        backgroundColor: ['#6f42c1', '#0dcaf0', '#fd7e14', '#adb5bd'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { min: 1, max: 7, grid: { color: gridColor }, ticks: { color: textColor } },
+                        x: { grid: { display: false }, ticks: { color: textColor } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // ==========================================
+            // CHART 4: FREQUENCY BY DAY (Bar Chart)
+            // ==========================================
+            new Chart(document.getElementById('frequencyChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Logs Recorded',
+                        data: [4, 3, 5, 2, 3, 6, 1],
+                        backgroundColor: '#20c997',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, stepSize: 1 } },
+                        x: { grid: { display: false }, ticks: { color: textColor } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        });
+    </script>
+}

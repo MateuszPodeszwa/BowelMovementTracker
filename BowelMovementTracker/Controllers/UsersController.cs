@@ -107,7 +107,7 @@ public class UsersController(BowelMovementTrackerContext context) : Controller
 
         var any = userMail.Any(mail => mail == userRegisterData.UserEmailAddress);
 
-        if (any)
+        if (!any)
         {
             ModelState.AddModelError(string.Empty, "Illegal Operation.");
         }
