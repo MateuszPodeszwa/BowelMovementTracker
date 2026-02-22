@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Numerics;
 using BowelMovementTracker.Data.Enums;
 
 namespace BowelMovementTracker.Models;
