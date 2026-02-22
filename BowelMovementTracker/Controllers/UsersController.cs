@@ -101,8 +101,11 @@ public class UsersController(BowelMovementTrackerContext context) : Controller
         // Restrict Registration to specific user addresses, to ensure a specific group of people can register.
         // This hardcoded functionality is temporary.
         string[] userMail = [
-            "podinatubie@gmail.com",
-            "testmail@test.test"
+            "guest1@example.com",
+            "guest2@example.com",
+            "guest3@example.com",
+            "guest4@example.com",
+            "guest5@example.com"
         ];
 
         var any = userMail.Any(mail => mail == userRegisterData.UserEmailAddress);
