@@ -1,4 +1,6 @@
-﻿@using System.Text.Json
+﻿@using System.Globalization
+@using System.Text.Json
+@using Humanizer
 @using NuGet.Protocol
 @model AnalyticsViewModel
 @{
@@ -64,7 +66,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-4 col-lg-2">
             <div class="card border-0 shadow-sm bg-body-tertiary h-100 rounded-4">
                 <div class="card-body p-4 text-center">
                     <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Avg Gap (Hours)</h6>
@@ -72,11 +74,19 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-4 col-lg-2">
             <div class="card border-0 shadow-sm bg-body-tertiary h-100 rounded-4">
                 <div class="card-body p-4 text-center">
                     <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Coffee Days</h6>
-                    <h2 class="display-5 fw-bold text-danger mb-0">N/A</h2>
+                    <h2 class="display-5 fw-bold text-danger mb-0">@Model.GetTotalCoffeeLogCount()</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-4 col-lg-2">
+            <div class="card border-0 shadow-sm bg-body-tertiary h-100 rounded-4">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Milk Days</h6>
+                    <h2 class="display-5 fw-bold text-danger mb-0">@Model.GetTotalMilkLogCount()</h2>
                 </div>
             </div>
         </div>
@@ -122,7 +132,7 @@
             <div class="card border-0 shadow-sm bg-body-tertiary rounded-4 h-100">
                 <div class="card-body p-4">
                     <h5 class="card-title fw-bold mb-4">Logging Frequency by Day</h5>
-                    <p class="small text-body-secondary mb-3">Total number of entries recorded per day of the week.</p>
+                    <p class="small text-body-secondary mb-3">Total number of entries recorded per day of the week. This includes results from whole selected period.</p>
                     <div style="height: 250px;">
                         <canvas id="frequencyChart"></canvas>
                     </div>
@@ -143,18 +153,74 @@
             const textColor = '#6c757d';
 
             // ==========================================
-            // CHART 1: TIMELINE (Line Chart)
-            // ==========================================
-            // Replace these arrays with Html.Raw(Json.Serialize(Model.Dates)) etc.
-            const timelineDates = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            const timelineScores = [4, 3, 5, 4, 6, 4, 3];
+// CHART 1: TIMELINE (Line Chart)
+// ==========================================
+            @{
+                // Define the end date (assuming today or passed from Model)
+                DateTime date = DateTime.Now;
+
+                var chartLabels = new List<string>();
+                var chartData = new List<double?>();
+
+                // Process the logs based on the view
+                switch (currentlySelectedFilterInt)
+                {
+                    case 365:
+                        // Group by Month, calculate Average
+                        var monthNames = System.Globalization.DateTimeFormatInfo.InvariantInfo.AbbreviatedMonthNames.Where(m => !string.IsNullOrEmpty(m)).ToArray();
+
+                        for (var i = 1; i <= 12; i++)
+                        {
+                            chartLabels.Add(monthNames[i - 1]);
+                            var monthLogs = Model.FilteredDashboardLogs.Where(x => x.DateTime?.Month == i && x.DateTime?.Year == date.Year).ToList();
+
+                            chartData.Add(monthLogs.Any() ? Math.Round(monthLogs.Average(x => (int)x.BowelMovementType), 1) : null);
+                        }
+
+                        break;
+
+                    case 30:
+                        // Group by Day of the Month (1 to 30/31)
+                        var daysInThisMonth = DateTime.DaysInMonth(date.Year, date.Month);
+
+                        for (var i = 1; i <= daysInThisMonth; i++)
+                        {
+                            chartLabels.Add(i.ToString("D2")); // "01", "02", etc.
+                            var dayLogs = Model.FilteredDashboardLogs.Where(x => x.DateTime?.Day == i && x.DateTime?.Month == date.Month).ToList();
+
+                            // If multiple logs in one day, average them. Otherwise it's just the raw score.
+                            chartData.Add(dayLogs.Any() ? Math.Round(dayLogs.Average(x => (int)x.BowelMovementType), 1) : null);
+                        }
+
+                        break;
+
+                    case 7:
+                        // Last 7 Days (e.g., Mon, Tue, Wed...)
+                        for (int i = 6; i >= 0; i--)
+                        {
+                            DateTime targetDate = date.AddDays(-i);
+                            chartLabels.Add(targetDate.ToString("ddd")); // Outputs abbreviated day name
+
+                            var dayLogs = Model.FilteredDashboardLogs.Where(x => x.DateTime?.Date == targetDate.Date).ToList();
+
+                            chartData.Add(dayLogs.Any() ? Math.Round(dayLogs.Average(x => (int)x.BowelMovementType), 1) : null);
+                        }
+
+                        break;
+                }
+            }
+
+
+            // Pass the C# arrays directly into JavaScript using Json.Serialize
+            const timelineDates = @Html.Raw(Json.Serialize(chartLabels));
+            const timelineScores = @Html.Raw(Json.Serialize(chartData));
 
             new Chart(document.getElementById('timelineChart'), {
                 type: 'line',
                 data: {
                     labels: timelineDates,
                     datasets: [{
-                        label: 'Bristol Score',
+                        label: 'Bristol Score Average',
                         data: timelineScores,
                         borderColor: '#0d6efd',
                         backgroundColor: 'rgba(13, 110, 253, 0.1)',
@@ -162,7 +228,8 @@
                         pointBackgroundColor: '#0d6efd',
                         pointRadius: 5,
                         fill: true,
-                        tension: 0.3 // Smooth curves
+                        tension: 0.3, // Smooth curves
+                        spanGaps: true // CRITICAL: Connects the line even if a day/month has no logged data (null)
                     }]
                 },
                 options: {
@@ -172,25 +239,40 @@
                         y: {
                             min: 1,
                             max: 7,
-                            grid: {color: gridColor},
-                            ticks: {color: textColor, stepSize: 1}
+                            grid: {color: gridColor}, // update with your gridColor var
+                            ticks: {color: textColor, stepSize: 1} // update with your textColor var
                         },
                         x: {
                             grid: {display: false},
-                            ticks: {color: textColor}
+                            ticks: {color: textColor} // update with your textColor var
                         }
                     },
                     plugins: {
-                        legend: {display: false}
+                        legend: {display: false},
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return 'Avg Score: ' + context.parsed.y;
+                                }
+                            }
+                        }
                     }
-                }
+                },
             });
+            @{
+                var constipatedCount = Model.FilteredDashboardLogs.Count(x => (int)x.BowelMovementType is 1 or 2);
+                var normalCount = Model.FilteredDashboardLogs.Count(x => (int)x.BowelMovementType is 3 or 4);
+                var diarrhoeaCount = Model.FilteredDashboardLogs.Count(x => (int)x.BowelMovementType is >= 5 and <= 7);
+
+                int[] distributionCounts = [constipatedCount, normalCount, diarrhoeaCount];
+            }
 
             // ==========================================
             // CHART 2: DISTRIBUTION (Doughnut Chart)
             // ==========================================
-            const scaleLabels = ['Type 1-2 (Constipated)', 'Type 3-4 (Normal)', 'Type 5-7 (Diarrhoea)'];
-            const scaleCounts = [3, 15, 6];
+            const scaleLabels = ['Type 1-2 (Constipated)', 'Type 3-4 (Normal)', 'Type 5-7 (Diarrhea)'];
+
+            const scaleCounts = @Html.Raw(Json.Serialize(distributionCounts));
 
             new Chart(document.getElementById('distributionChart'), {
                 type: 'doughnut',
@@ -198,6 +280,7 @@
                     labels: scaleLabels,
                     datasets: [{
                         data: scaleCounts,
+                        // Colors: Yellow (Warning/Constipated), Green (Good/Normal), Red (Alert/Diarrhea)
                         backgroundColor: ['#ffc107', '#198754', '#dc3545'],
                         borderWidth: 0
                     }]
@@ -205,23 +288,56 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '70%',
+                    cutout: '70%', // Creates the doughnut hole
                     plugins: {
-                        legend: {position: 'bottom', labels: {color: textColor}}
+                        legend: {position: 'bottom', labels: {color: textColor}},
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    // Shows "Type 3-4 (Normal): 15 logs" in the tooltip
+                                    return ` ${context.label}: ${context.raw} logs`;
+                                }
+                            }
+                        }
                     }
                 }
+
             });
+            @{
+                var coffeeOnly = Model.FilteredDashboardLogs.Where(x => x.WasCoffeeConsumed && !x.WasMilkConsumed).ToList();
+                var milkOnly = Model.FilteredDashboardLogs.Where(x => !x.WasCoffeeConsumed && x.WasMilkConsumed).ToList();
+                var bothConsumed = Model.FilteredDashboardLogs.Where(x => x.WasCoffeeConsumed && x.WasMilkConsumed).ToList();
+                var neitherConsumed = Model.FilteredDashboardLogs.Where(x => !x.WasCoffeeConsumed && !x.WasMilkConsumed).ToList();
+
+                // Calculate the Average Bristol Score for each (returns null if no logs exist for that combo)
+                double?[] dietaryAverages =
+                [
+                    coffeeOnly.Any() ? Math.Round(coffeeOnly.Average(x => (int)x.BowelMovementType), 1) : null,
+                    milkOnly.Any() ? Math.Round(milkOnly.Average(x => (int)x.BowelMovementType), 1) : null,
+                    bothConsumed.Any() ? Math.Round(bothConsumed.Average(x => (int)x.BowelMovementType), 1) : null,
+                    neitherConsumed.Any() ? Math.Round(neitherConsumed.Average(x => (int)x.BowelMovementType), 1) : null
+                ];
+
+                // Grab the counts so we can display them in the JS tooltips!
+                int[] dietaryCounts = [coffeeOnly.Count, milkOnly.Count, bothConsumed.Count, neitherConsumed.Count];
+            }
 
             // ==========================================
             // CHART 3: DIETARY IMPACT (Bar Chart)
             // ==========================================
+            const dietLabels = ['Coffee Only', 'Milk Only', 'Both', 'Neither'];
+
+            // Pull our calculated arrays from C#
+            const dietAverages = @Html.Raw(Json.Serialize(dietaryAverages));
+            const dietCounts = @Html.Raw(Json.Serialize(dietaryCounts));
+
             new Chart(document.getElementById('dietaryChart'), {
                 type: 'bar',
                 data: {
-                    labels: ['Coffee Only', 'Milk Only', 'Both', 'Neither'],
+                    labels: dietLabels,
                     datasets: [{
                         label: 'Average Score',
-                        data: [5.2, 3.8, 6.1, 4.0],
+                        data: dietAverages,
                         backgroundColor: ['#6f42c1', '#0dcaf0', '#fd7e14', '#adb5bd'],
                         borderRadius: 6
                     }]
@@ -230,39 +346,101 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: {min: 1, max: 7, grid: {color: gridColor}, ticks: {color: textColor}},
-                        x: {grid: {display: false}, ticks: {color: textColor}}
+                        y: {
+                            min: 1,
+                            max: 7,
+                            grid: {color: gridColor}, // replace with gridColor
+                            ticks: {color: textColor, stepSize: 1} // replace with textColor
+                        },
+                        x: {
+                            grid: {display: false},
+                            ticks: {color: textColor} // replace with textColor
+                        }
                     },
-                    plugins: {legend: {display: false}}
+                    plugins: {
+                        legend: {display: false},
+                        tooltip: {
+                            callbacks: {
+                                // Custom tooltip to show both Average AND the Count
+                                label: function (context) {
+                                    let avg = context.raw || 'No Data';
+                                    let count = dietCounts[context.dataIndex];
+                                    return `Avg Score: ${avg} (based on ${count} logs)`;
+                                }
+                            }
+                        }
+                    }
                 }
+
             });
+            @{
+                // Array to hold counts for: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+                int[] frequencyCounts = new int[7];
+
+                // Loop through the filtered logs, making sure DateTime isn't null
+                foreach (var log in Model.FilteredDashboardLogs.Where(x => x.DateTime.HasValue))
+                {
+                    DayOfWeek day = log.DateTime!.Value.DayOfWeek;
+
+                    // Map C#'s DayOfWeek to our array index. 
+                    // C# default: Sunday=0, Monday=1... Saturday=6
+                    // Our array: Monday=0, Tuesday=1... Sunday=6
+                    var index = day == DayOfWeek.Sunday ? 6 : (int)day - 1;
+
+                    frequencyCounts[index]++;
+                }
+            }
 
             // ==========================================
             // CHART 4: FREQUENCY BY DAY (Bar Chart)
             // ==========================================
-            new Chart(document.getElementById('frequencyChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [{
-                        label: 'Logs Recorded',
-                        data: [4, 3, 5, 2, 3, 6, 1],
-                        backgroundColor: '#20c997',
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {beginAtZero: true, grid: {color: gridColor}, ticks: {color: textColor, stepSize: 1}},
-                        x: {grid: {display: false}, ticks: {color: textColor}}
-                    },
-                    plugins: {legend: {display: false}}
-                }
-            });
-        });
-    </script>
-}
 
+            const freqLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+            // Inject the counted frequencies from C#
+            const freqData = @Html.Raw(Json.Serialize(frequencyCounts));
+
+            new Chart(document.getElementById('frequencyChart'),
+                {
+                    type: 'bar',
+                    data: {
+                        labels: freqLabels,
+                        datasets: [{
+                            label: 'Logs Recorded',
+                            data: freqData,
+                            backgroundColor: '#20c997', // Teal color
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {color: 'rgba(0,0,0,0.1)'}, // update to your gridColor variable
+                                ticks: {color: textColor, stepSize: 1} // update to your textColor variable
+                            },
+                            x: {
+                                grid: {display: false},
+                                ticks: {color: textColor} // update to your textColor variable
+                            }
+                        },
+                        plugins: {
+                            legend: {display: false},
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        // Adds a clean tooltip, e.g., "Logs Recorded: 5"
+                                        return ` ${context.dataset.label}: ${context.raw}`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                }
+            )
+        })
+
+    </script>
 }

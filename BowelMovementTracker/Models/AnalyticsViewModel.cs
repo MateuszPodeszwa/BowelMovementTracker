@@ -28,9 +28,14 @@ public class AnalyticsViewModel
     public double GetFilteredAverageBristolScore()
     {
         if (FilteredDashboardLogs.Count.Equals(0) || FilteredDashboardLogs.IsNullOrEmpty()) return 0.0;
-
-        return FilteredDashboardLogs.Average(item => (int)item.BowelMovementType);
+        
+        var calc = FilteredDashboardLogs.Average(item => (int)item.BowelMovementType);
+        
+        return Math.Round(calc, 2);
     }
+
+    public int GetTotalCoffeeLogCount() => FilteredDashboardLogs.Select(log => log.WasCoffeeConsumed.Equals(true)).Count();
+    public int GetTotalMilkLogCount() => FilteredDashboardLogs.Select(log => log.WasMilkConsumed.Equals(true)).Count();
 
     public TimeSpan GetFilteredAverageLogTimeSpan()
     {
