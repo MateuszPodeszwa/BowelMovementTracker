@@ -12,6 +12,9 @@ namespace BowelMovementTracker.Controllers;
 
 public class AnalyticsController(BowelMovementTrackerContext context) : Controller
 {
+    [HttpGet("/Calendar"), Authorize]
+    public IActionResult Calendar() => View();
+    
     [HttpGet("/{id:guid}/Analytics", Name = "AnalyticsDashboard"), Authorize]
     public async Task<IActionResult> Index(
         [FromRoute(Name = "id")] Guid? userid,

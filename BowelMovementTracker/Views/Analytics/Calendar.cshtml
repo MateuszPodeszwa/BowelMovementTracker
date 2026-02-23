@@ -1,0 +1,349 @@
+﻿@model AnalyticsViewModel?
+
+@{
+  var calGapMobile = "0.5rem";
+  var calGapDesktop = "1rem";
+}
+
+<style>
+  /* * CUSTOM CALENDAR CSS
+   * Fluid horizontal accordion grid, pure CSS tooltips, and auto dark-mode compatibility
+   */
+  
+  root {
+    /* Establish custom variables for grid math */
+    --cal-gap-mobile: @calGapMobile;
+    --cal-gap-desktop: @calGapDesktop;
+  }
+  .calendar-wrapper {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    font-family: var(--bs-body-font-family), sans-serif;
+  }
+
+  /* Hidden global radio to close all days */
+  .global-close-radio { display: none; }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: var(--bs-alert-border);
+    position: relative;
+  }
+
+  @@media (min-width: 768px) {
+    .calendar-grid { gap: @calGapDesktop; }
+  }
+
+  /* Wrapper acts as the fixed grid placeholder */
+  .day-wrapper {
+    position: relative;
+    min-height: 130px;
+    border-radius: var(--bs-border-radius-lg);
+  }
+
+  /* Elevate the expanded wrapper so it overlaps adjacent cells smoothly */
+  .day-wrapper:has(.day-toggle:checked) {
+    z-index: 20;
+  }
+
+  /* The actual visually animated card */
+  .day-card-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color-translucent);
+    border-radius: var(--bs-border-radius-lg);
+    overflow: hidden;
+    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
+                transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+  }
+
+  .day-wrapper:not(.empty) .day-card-inner:hover {
+    box-shadow: var(--bs-box-shadow);
+    border-color: var(--bs-primary);
+    background-color: var(--bs-secondary-bg);
+    z-index: 2;
+  }
+
+  .day-wrapper.empty .day-card-inner {
+    background-color: transparent;
+    border: 1px dashed var(--bs-border-color);
+    opacity: 0.5;
+  }
+
+  .day-toggle { display: none; }
+
+  /* Expanded State Configuration */
+  .day-toggle:checked ~ .day-card-inner {
+    /* Spans exactly 2 columns by adding the gap width */
+    width: calc(200% + @calGapMobile);
+    background-color: var(--bs-body-bg);
+    box-shadow: var(--bs-box-shadow-lg);
+    border-color: var(--bs-primary);
+    cursor: default;
+  }
+
+  @@media (min-width: 768px) {
+    .day-toggle:checked ~ .day-card-inner {
+      width: calc(200% + @calGapDesktop);
+    }
+  }
+  /* Handle Saturday (7th Column): Expand to the Left instead of Right */
+  .day-wrapper:nth-of-type(7n) .day-card-inner {
+    left: auto;
+    right: 0;
+  }
+
+  .day-wrapper:nth-of-type(7n) .day-toggle:checked ~ .day-card-inner {
+    flex-direction: row-reverse;
+  }
+
+  /* Swap border sides for Saturday */
+  .day-wrapper:nth-of-type(7n) .day-expanded {
+    border-inline-start: none;
+    border-inline-end: 1px solid var(--bs-border-color-translucent);
+  }
+
+  /* Day Front: The original square content */
+  .day-front {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 100%;
+    min-width: 100%;
+    cursor: pointer;
+    transition: flex 0.5s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Lock the front side to exactly 1 column width when expanded */
+  .day-toggle:checked ~ .day-card-inner .day-front {
+    flex: 0 0 calc(50% - (@calGapMobile / 2));
+    min-width: calc(50% - (@calGapMobile / 2));
+    cursor: default;
+  }
+  @@media (min-width: 768px) {
+    .day-toggle:checked ~ .day-card-inner .day-front {
+      flex: 0 0 calc(50% - (@calGapDesktop / 2));
+      min-width: calc(50% - (@calGapDesktop / 2));
+    }
+  }
+
+  /* Day Expanded: The hidden agenda content */
+  .day-expanded {
+    flex: 1;
+    min-width: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease 0.15s, visibility 0.3s ease 0.15s;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    border-inline-start: 1px solid var(--bs-border-color-translucent);
+  }
+
+  /* Swap border sides for Saturday */
+  .day-wrapper:nth-child(7n) .day-expanded {
+    border-inline-start: none;
+    border-inline-end: 1px solid var(--bs-border-color-translucent);
+  }
+
+  .day-toggle:checked ~ .day-card-inner .day-expanded {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Event Dots & Pure CSS Tooltips */
+  .event-dots-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: auto;
+  }
+
+  .event-dot {
+    font-size: 0.65rem;
+    position: relative;
+    cursor: help;
+  }
+
+  .event-dot::after {
+    content: attr(data-category);
+    position: absolute;
+    bottom: 150%;
+    left: 50%;
+    transform: translateX(-50%) scale(0.8);
+    background-color: var(--bs-emphasis-color);
+    color: var(--bs-body-bg);
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--bs-border-radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    white-space: nowrap;
+    z-index: 30;
+    pointer-events: none;
+  }
+
+  .event-dot:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) scale(1);
+  }
+
+  /* Hide tooltips when card is open to prevent visual clutter */
+  .day-toggle:checked ~ .day-card-inner .event-dot::after {
+    display: none;
+  }
+
+  /* Custom Scrollbar for expanded info */
+  .day-expanded::-webkit-scrollbar { width: 4px; }
+  .day-expanded::-webkit-scrollbar-thumb {
+    background-color: var(--bs-secondary-bg);
+    border-radius: 4px;
+  }
+
+  /* Invisible overlay that covers ONLY the original day square when expanded */
+  .close-card-overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    /* Matches the width of the front square */
+    width: calc(50% - (@calGapMobile / 2));
+    z-index: 40;
+    cursor: pointer;
+    display: none;
+  }
+
+  @@media (min-width: 768px) {
+  .close-card-overlay {
+    width: calc(50% - (@calGapDesktop / 2));
+  }
+  }
+
+  /* Activate it when open */
+  .day-toggle:checked ~ .day-card-inner .close-card-overlay {
+    display: block;
+  }
+
+  /* Keep it perfectly aligned for the Saturday edge-case (which expands left) */
+  .day-wrapper:nth-of-type(7n) .close-card-overlay {
+    left: auto;
+    right: 0;
+  }
+</style>
+
+<div class="calendar-wrapper container-fluid p-3 p-md-4 h-100 d-flex flex-column rounded-4 border shadow-sm">
+  
+  <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-2" style="width: 40px; height: 40px;">
+      <i class="bi bi-chevron-left"></i>
+    </button>
+    <div class="text-center">
+      <h2 class="mb-0 fw-bold tracking-tight">October 2026</h2>
+      <span class="text-muted small">Event Schedule</span>
+    </div>
+    <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-2" style="width: 40px; height: 40px;">
+      <i class="bi bi-chevron-right"></i>
+    </button>
+  </header>
+
+  <div class="calendar-grid mb-2 text-center fw-semibold text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">
+    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+  </div>
+
+  <div class="calendar-grid flex-grow-1">
+    
+    <input type="radio" name="calendar-day" id="close-calendar" class="global-close-radio" checked>
+
+    <div class="day-wrapper empty"><div class="day-card-inner"></div></div>
+    <div class="day-wrapper empty"><div class="day-card-inner"></div></div>
+    <div class="day-wrapper empty"><div class="day-card-inner"></div></div>
+    <div class="day-wrapper empty"><div class="day-card-inner"></div></div>
+
+    <div class="day-wrapper">
+      <input type="radio" name="calendar-day" id="day-1" class="day-toggle">
+      <div class="day-card-inner">
+        
+        <label for="day-1" class="day-front p-2 p-md-3 m-0">
+          <span class="fs-5 fw-bold text-body-secondary">1</span>
+        </label>
+        
+        <div class="day-expanded p-3 bg-body-tertiary">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0 fw-bold text-muted">October 1</h6>
+            <label for="close-calendar" class="btn-close btn-close-sm" style="cursor:pointer;"></label>
+          </div>
+          <p class="text-muted small mb-0">No events scheduled.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="day-wrapper">
+      <input type="radio" name="calendar-day" id="day-2" class="day-toggle">
+      <div class="day-card-inner">
+        
+        <label for="close-calendar" class="close-card-overlay" title="Close"></label>
+
+        <label for="day-2" class="day-front p-2 p-md-3 m-0">
+          <span class="fs-5 fw-bold">2</span>
+          <div class="event-dots-container">
+            <i class="bi bi-circle-fill text-primary event-dot" data-category="Meeting"></i>
+            <i class="bi bi-triangle-fill text-danger event-dot" data-category="Deadline"></i>
+          </div>
+        </label>
+        
+        <div class="day-expanded bg-body-tertiary d-flex flex-column h-100">
+          
+          <label for="close-calendar" class="p-3 mb-0 d-flex justify-content-between align-items-center border-bottom border-light" style="cursor: pointer; background-color: rgba(0,0,0,0.02);">
+            <h6 class="mb-0 fw-bold text-primary">Agenda</h6>
+            <i class="bi bi-chevron-contract text-muted small"></i>
+          </label>
+
+          <ul class="list-group list-group-flush small bg-transparent p-3 pt-2 overflow-y-auto">
+            <li class="list-group-item bg-transparent px-0 py-2 border-bottom-dashed">
+              <span class="badge text-bg-primary rounded-pill me-1 d-inline-block" style="width: 60px;">10:00</span> Project Kickoff
+            </li>
+            <li class="list-group-item bg-transparent px-0 py-2 border-bottom-dashed">
+              <span class="badge text-bg-danger rounded-pill me-1 d-inline-block" style="width: 60px;">17:00</span> Final Delivery
+            </li>
+          </ul>
+          
+        </div>
+
+      </div>
+    </div>
+
+    <div class="day-wrapper">
+      <input type="radio" name="calendar-day" id="day-3" class="day-toggle">
+      <div class="day-card-inner">
+        
+        <label for="day-3" class="day-front p-2 p-md-3 m-0">
+          <span class="fs-5 fw-bold text-danger">3</span>
+          <div class="event-dots-container">
+            <i class="bi bi-square-fill text-success event-dot" data-category="Personal"></i>
+          </div>
+        </label>
+        
+        <div class="day-expanded p-3 bg-body-tertiary">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0 fw-bold text-success">Personal Time</h6>
+            <label for="close-calendar" class="btn-close btn-close-sm" style="cursor:pointer;"></label>
+          </div>
+          <ul class="list-group list-group-flush small">
+            <li class="list-group-item bg-transparent px-0 py-2">
+              <span class="badge text-bg-success rounded-pill me-1">All Day</span> Family Trip to Mountains
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

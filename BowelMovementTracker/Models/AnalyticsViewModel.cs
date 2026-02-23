@@ -34,8 +34,9 @@ public class AnalyticsViewModel
         return Math.Round(calc, 2);
     }
 
-    public int GetTotalCoffeeLogCount() => FilteredDashboardLogs.Select(log => log.WasCoffeeConsumed.Equals(true)).Count();
-    public int GetTotalMilkLogCount() => FilteredDashboardLogs.Select(log => log.WasMilkConsumed.Equals(true)).Count();
+    public int GetTotalCoffeeLogCount() => FilteredDashboardLogs.Count(log => log?.WasCoffeeConsumed == true);
+
+    public int GetTotalMilkLogCount() => FilteredDashboardLogs.Count(log => log?.WasMilkConsumed == true);
 
     public TimeSpan GetFilteredAverageLogTimeSpan()
     {
