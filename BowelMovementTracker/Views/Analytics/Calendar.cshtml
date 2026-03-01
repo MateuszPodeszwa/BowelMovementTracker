@@ -1,15 +1,16 @@
 ﻿@using BowelMovementTracker.Data.Enums
+@using Microsoft.IdentityModel.Tokens
 @model AnalyticsViewModel
 
 @{
-var now = DateTime.UtcNow;
-var daysInCurrentMonth = DateTime.DaysInMonth(now.Year, now.Month);
-var firstDayOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-var lastDayOfMonth = new DateTime(now.Year, now.Month, daysInCurrentMonth, 23, 59, 59, 999, DateTimeKind.Utc);
-var startDayOffset = (int)firstDayOfMonth.DayOfWeek;
+  var now = DateTime.UtcNow;
+  var daysInCurrentMonth = DateTime.DaysInMonth(now.Year, now.Month);
+  var firstDayOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+  var lastDayOfMonth = new DateTime(now.Year, now.Month, daysInCurrentMonth, 23, 59, 59, 999, DateTimeKind.Utc);
+  var startDayOffset = (int)firstDayOfMonth.DayOfWeek;
 
-Model.ApplyDashboardDateFilter(firstDayOfMonth, lastDayOfMonth);
-var logs = Model.FilteredDashboardLogs;
+  Model.ApplyDashboardDateFilter(firstDayOfMonth, lastDayOfMonth);
+  var logs = Model.FilteredDashboardLogs;
 }
 
 <style>
@@ -28,8 +29,11 @@ var logs = Model.FilteredDashboardLogs;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 0.5rem;
   }
+
   @@media (min-width: 768px) {
-    .calendar-grid { gap: 1rem; }
+    .calendar-grid {
+      gap: 1rem;
+    }
   }
 
   .day-wrapper {
@@ -38,8 +42,11 @@ var logs = Model.FilteredDashboardLogs;
     min-height: 110px;
     border-radius: var(--bs-border-radius-lg);
   }
+
   @@media (min-width: 768px) {
-    .day-wrapper { min-height: 130px; }
+    .day-wrapper {
+      min-height: 130px;
+    }
   }
 
   .day-wrapper.empty {
@@ -130,7 +137,7 @@ var logs = Model.FilteredDashboardLogs;
   .day-wrapper:nth-last-of-type(-n+14):nth-of-type(7n-2) .day-popout {
     transform-origin: right bottom;
   }
-  
+
   /* ----------------------------------------------------------- */
 
   /* Trigger Popout */
@@ -219,19 +226,22 @@ var logs = Model.FilteredDashboardLogs;
 <div class="calendar-wrapper container-fluid p-3 p-md-4 h-100 d-flex flex-column rounded-4 border shadow-sm">
 
   <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-    <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-2" style="width: 40px; height: 40px;">
+    <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-2"
+            style="width: 40px; height: 40px;">
       <i class="bi bi-chevron-left"></i>
     </button>
     <div class="text-center">
       <h2 class="mb-0 fw-bold tracking-tight">@now.ToString("MMMM yyyy")</h2>
       <span class="text-muted small">Event Schedule</span>
     </div>
-    <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-2" style="width: 40px; height: 40px;">
+    <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-2"
+            style="width: 40px; height: 40px;">
       <i class="bi bi-chevron-right"></i>
     </button>
   </header>
 
-  <div class="calendar-grid mb-2 text-center fw-semibold text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">
+  <div class="calendar-grid mb-2 text-center fw-semibold text-secondary text-uppercase"
+       style="font-size: 0.8rem; letter-spacing: 1px;">
     <div>Sun</div>
     <div>Mon</div>
     <div>Tue</div>
@@ -247,72 +257,108 @@ var logs = Model.FilteredDashboardLogs;
 
     @for (var i = 0; i < startDayOffset; i++)
     {
-    <div class="day-wrapper empty"></div>
+      <div class="day-wrapper empty"></div>
     }
 
     @for (var index = 1; index <= daysInCurrentMonth; index++)
     {
-    var currentLog = logs.Where(l => l.DateTime?.Day == index).ToList();
-    var isToday = (index == now.Day);
+      var currentLog = logs.Where(l => l.DateTime?.Day == index).ToList();
+      var isToday = (index == now.Day);
 
-    <div class="day-wrapper">
-      <input type="radio" name="calendar-day" id="day-@index" class="day-toggle">
+      <div class="day-wrapper">
+        <input type="radio" name="calendar-day" id="day-@index" class="day-toggle">
 
-      <label class="day-front p-2 p-md-3 m-0 @(isToday ? "border-primary bg-primary-subtle" : "")" for="day-@index">
-        <span class="fs-5 fw-bold @(isToday ? "text-primary" : "")">@(index.ToString("00"))</span>
-
-        <div class="event-dots-container">
-          @if (currentLog.Any())
-          {
-          <i class="bi bi-square-fill text-success event-dot" data-category="Log-Present"></i>
-          @if (currentLog.Any(l => l.WasMilkConsumed == true)) { <i class="bi bi-triangle-fill text-danger event-dot" data-category="Milk-Consumed"></i> }
-          @if (currentLog.Any(l => l.WasCoffeeConsumed == true)) { <i class="bi bi-circle-fill text-primary event-dot" data-category="Caffe-Consumed"></i> }
-          }
-        </div>
-      </label>
-
-      <div class="day-popout">
-
-        <div class="popout-half popout-left p-2 p-md-3 bg-secondary-subtle">
-          <label class="close-trigger" for="close-calendar" title="Close"></label>
-          <span class="fs-5 fw-bold text-primary">@(index.ToString("00"))</span>
+        <label class="day-front p-2 p-md-3 m-0 @(isToday ? "border-primary bg-primary-subtle" : "")" for="day-@index">
+          <span class="fs-5 fw-bold @(isToday ? "text-primary" : "")">@(index.ToString("00"))</span>
 
           <div class="event-dots-container">
             @if (currentLog.Any())
             {
-            <i class="bi bi-square-fill text-success" style="font-size: 0.7rem;"></i>
-            @if (currentLog.Any(l => l.WasMilkConsumed == true)) { <i class="bi bi-triangle-fill text-danger" style="font-size: 0.7rem;"></i> }
-            @if (currentLog.Any(l => l.WasCoffeeConsumed == true)) { <i class="bi bi-circle-fill text-primary" style="font-size: 0.7rem;"></i> }
+              <i class="bi bi-square-fill text-success event-dot" data-category="Log-Present"></i>
+              @if (currentLog.Any(l => l.WasMilkConsumed == true))
+              {
+                <i class="bi bi-triangle-fill text-danger event-dot" data-category="Milk-Consumed"></i>
+              }
+
+              @if (currentLog.Any(l => l.WasCoffeeConsumed == true))
+              {
+                <i class="bi bi-circle-fill text-primary event-dot" data-category="Caffe-Consumed"></i>
+              }
             }
           </div>
-        </div>
+        </label>
 
-        <div class="popout-half popout-right bg-body-tertiary">
-          <div class="p-2 px-3 border-bottom d-flex justify-content-between align-items-center">
-            <span class="fw-bold small text-primary mb-0">History</span>
-            <label for="close-calendar" class="text-muted m-0" style="cursor: pointer;"><i class="bi bi-x-lg"></i></label>
+        <div class="day-popout">
+
+          <div class="popout-half popout-left p-2 p-md-3 bg-secondary-subtle">
+            <label class="close-trigger" for="close-calendar" title="Close"></label>
+            <span class="fs-5 fw-bold text-primary">@(index.ToString("00"))</span>
+
+            <div class="event-dots-container">
+              @if (currentLog.Any())
+              {
+                <i class="bi bi-square-fill text-success" style="font-size: 0.7rem;"></i>
+                @if (currentLog.Any(l => l.WasMilkConsumed == true))
+                {
+                  <i class="bi bi-triangle-fill text-danger" style="font-size: 0.7rem;"></i>
+                }
+
+                @if (currentLog.Any(l => l.WasCoffeeConsumed == true))
+                {
+                  <i class="bi bi-circle-fill text-primary" style="font-size: 0.7rem;"></i>
+                }
+              }
+            </div>
           </div>
 
-          <ul class="list-group list-group-flush small overflow-y-auto mb-0" style="flex: 1;">
-            @if (!currentLog.Any())
-            {
-            <li class="list-group-item bg-transparent text-muted fst-italic border-0 px-3 py-2">No logs for today.</li>
-            }
-            else
-            {
-            @foreach (var log in currentLog)
-            {
-            <li class="list-group-item bg-transparent px-3 py-2 border-bottom-dashed d-flex align-items-center gap-2">
-              <span class="badge text-bg-primary rounded-pill">@log.DateTime?.TimeOfDay.ToString(@"hh\:mm")</span>
-              <span class="fw-semibold">@((int)log.BowelMovementType)</span>
-            </li>
-            }
-            }
-          </ul>
-        </div>
+          <div class="popout-half popout-right bg-body-tertiary">
+            <div class="p-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+              <span class="fw-bold small text-primary mb-0">History</span>
+              <label for="close-calendar" class="text-muted m-0" style="cursor: pointer;"><i
+                  class="bi bi-x-lg"></i></label>
+            </div>
 
+            <ul class="list-group list-group-flush small overflow-y-auto mb-0" style="flex: 1;">
+              @if (!currentLog.Any())
+              {
+                <li class="list-group-item bg-transparent text-muted fst-italic border-0 px-3 py-2">No logs for today.
+                </li>
+              }
+              else
+              {
+                @foreach (var log in currentLog)
+                {
+                  <a class="btn" asp-route="UserHome" asp-route-id="@Model.UserIdentifier" asp-route-date="@log.DateTime!.Value.ToString("s")">
+                  <li
+                    class="list-group-item bg-transparent px-3 py-2 border-bottom-dashed d-flex align-items-center gap-2">
+                    <span class="badge text-bg-primary rounded-pill">@log.DateTime?.TimeOfDay.ToString(@"hh\:mm")</span>
+                    @if (log.WasCoffeeConsumed == true)
+                    {
+                      <i class="bi bi-cup-hot-fill"></i>
+                    }
+                    @if (log.WasMilkConsumed == true)
+                    {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                           class="bi bi-measuring-cup-fill" viewBox="0 0 16 16">
+                        <path
+                          d="M14 0a2 2 0 0 1 2 2v5.959a1.041 1.041 0 0 1-2.049.264l-.02-.093-.849-5.096a.041.041 0 0 0-.082.007V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V3.742a2.5 2.5 0 0 0-.732-1.767L.146.854A.5.5 0 0 1 .5 0zM4 13v1h1.5a.5.5 0 0 0 0-1zm0-2v1h3.5a.5.5 0 0 0 0-1zm0-2v1h1.5a.5.5 0 0 0 0-1zm0-2v1h3.5a.5.5 0 0 0 0-1zm0-2v1h1.5a.5.5 0 0 0 0-1zm0-2v1h3.5a.5.5 0 0 0 0-1z"/>
+                      </svg>
+                    }
+                    <span class="fw-semibold">Notes:
+                      @if (!log.Notes.IsNullOrEmpty())
+                      {
+                        @log.Notes![..20]
+                      }...
+                    </span>
+                  </li>
+                  </a>
+                }
+              }
+            </ul>
+          </div>
+
+        </div>
       </div>
-    </div>
     }
 
   </div>

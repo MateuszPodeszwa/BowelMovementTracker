@@ -69,18 +69,18 @@
         <div class="col-4 col-lg-2">
             <div class="card border-0 shadow-sm bg-body-tertiary h-100 rounded-4">
                 <div class="card-body p-4 text-center">
-                    <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Avg Gap (Hours)</h6>
+                    <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Avg Gap</h6>
                     @{
                         var totalHours = Model.GetFilteredAverageLogTimeSpan().TotalHours;
                     }
-                    <h2 class="display-5 fw-bold text-warning mb-0">@Math.Round(totalHours, 2)</h2> @*IMPORTANT! Always use TotalHours, TotalDays etc... Never Days or Hours.*@
+                    <h2 class="display-5 fw-bold text-warning mb-0">@Math.Round(totalHours, 0)</h2> @*IMPORTANT! Always use TotalHours, TotalDays etc... Never Days or Hours.*@
                 </div>
             </div>
         </div>
         <div class="col-4 col-lg-2">
             <div class="card border-0 shadow-sm bg-body-tertiary h-100 rounded-4">
                 <div class="card-body p-4 text-center">
-                    <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Coffee Days</h6>
+                    <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Coffees</h6>
                     <h2 class="display-5 fw-bold text-danger mb-0">@Model.GetTotalCoffeeLogCount()</h2>
                 </div>
             </div>
@@ -88,7 +88,7 @@
         <div class="col-4 col-lg-2">
             <div class="card border-0 shadow-sm bg-body-tertiary h-100 rounded-4">
                 <div class="card-body p-4 text-center">
-                    <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Milk Days</h6>
+                    <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Milks</h6>
                     <h2 class="display-5 fw-bold text-danger mb-0">@Model.GetTotalMilkLogCount()</h2>
                 </div>
             </div>
