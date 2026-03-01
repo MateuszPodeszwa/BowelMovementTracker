@@ -3,6 +3,7 @@ using System.Security.Claims;
 using BowelMovementTracker.Data;
 using BowelMovementTracker.Data.Enums;
 using BowelMovementTracker.Models;
+using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,12 +13,58 @@ namespace BowelMovementTracker.Controllers;
 
 public class AnalyticsController(BowelMovementTrackerContext context) : Controller
 {
-    [HttpGet("/Calendar"), Authorize]
-    public IActionResult Calendar() => View();
-    
-    [HttpGet("/{id:guid}/Analytics", Name = "AnalyticsDashboard"), Authorize]
+    [HttpGet("/{userid:guid}/Calendar", Name = "AnalyticsCalendar"), Authorize]
+    public async Task<IActionResult> Calendar([FromRoute] Guid? userid)
+    {
+        // Deconstruct NOW into Y/M/D
+        var (year, month, currentDayInt) = DateTime.UtcNow;
+        // Get current month duration (necessary for printing calendar fields)
+        var daysInCurrentMonth = DateTime.DaysInMonth(year, month);
+
+        // Authenticate & Authorize User 
+        var loggedInUserIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        // Safety catch
+        if (!Guid.TryParse(loggedInUserIdStr, out Guid loggedInUserId)) return Unauthorized();
+        if (!userid.HasValue) return NotFound();
+        if (userid.Value != loggedInUserId) return Forbid();
+
+        User? user = await context.User
+            .Include(d => d.Diary)
+            .ThenInclude(d => d.Logs)
+            .FirstOrDefaultAsync(u => u.UserIdentifier == userid);
+
+        if (user == null)
+        {
+            TempData["ErrorMessage"] = "Couldn't fetch user.";
+            return View("Error",
+                new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        var userLogsMapList = user.Diary.Logs.Select(log => new LogItemsViewModel
+        {
+            Identifier = log.LogIdentifier,
+            BowelMovementType = log.LogBowelMovementType,
+            DateTime = log.LogDateTime,
+            LastUpdated = log.LogLastUpdated,
+            WasCoffeeConsumed = log.LogWasCoffeeConsumed ?? false,
+            WasMilkConsumed = log.LogWasMilkConsumed ?? false,
+            Notes = log.LogNotes ?? ""
+        }).ToList();
+        
+        var viewModel = new AnalyticsViewModel
+        {
+            AllLogItems = userLogsMapList,
+            UserIdentifier = loggedInUserId,
+            daysInCurrentMonth = daysInCurrentMonth,
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpGet("/{userid:guid}/Analytics", Name = "AnalyticsDashboard"), Authorize]
     public async Task<IActionResult> Index(
-        [FromRoute(Name = "id")] Guid? userid,
+        [FromRoute] Guid? userid,
         [FromQuery(Name = "tPeriod")] int? tPeriod)
     {
         // Ensure only logged user can access their data
@@ -47,9 +94,10 @@ public class AnalyticsController(BowelMovementTrackerContext context) : Controll
 
         if (tPeriod == null || !allowedTimeFilters.Contains(tPeriod.Value))
         {
-            return RedirectToRoute("AnalyticsDashboard", new { id = loggedInUserId, tPeriod = allowedTimeFilters[0] });
+            return RedirectToRoute("AnalyticsDashboard",
+                new { userid = loggedInUserId, tPeriod = allowedTimeFilters[0] });
         }
-        
+
         ViewData["RequestedTimePeriodInt"] = tPeriod.Value;
         ViewData["AllowedTimeFiltersArray"] = allowedTimeFilters;
 

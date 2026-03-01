@@ -1,157 +1,178 @@
-﻿@model AnalyticsViewModel?
+﻿@using BowelMovementTracker.Data.Enums
+@model AnalyticsViewModel
 
 @{
-  var calGapMobile = "0.5rem";
-  var calGapDesktop = "1rem";
+var now = DateTime.UtcNow;
+var daysInCurrentMonth = DateTime.DaysInMonth(now.Year, now.Month);
+var firstDayOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+var lastDayOfMonth = new DateTime(now.Year, now.Month, daysInCurrentMonth, 23, 59, 59, 999, DateTimeKind.Utc);
+var startDayOffset = (int)firstDayOfMonth.DayOfWeek;
+
+Model.ApplyDashboardDateFilter(firstDayOfMonth, lastDayOfMonth);
+var logs = Model.FilteredDashboardLogs;
 }
 
 <style>
-  /* * CUSTOM CALENDAR CSS
-   * Fluid horizontal accordion grid, pure CSS tooltips, and auto dark-mode compatibility
-   */
-  
-  root {
-    /* Establish custom variables for grid math */
-    --cal-gap-mobile: @calGapMobile;
-    --cal-gap-desktop: @calGapDesktop;
-  }
   .calendar-wrapper {
     background-color: var(--bs-body-bg);
     color: var(--bs-body-color);
-    font-family: var(--bs-body-font-family), sans-serif;
   }
 
-  /* Hidden global radio to close all days */
-  .global-close-radio { display: none; }
+  .global-close-radio {
+    display: none;
+  }
 
+  /* 1. Base Grid */
   .calendar-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: var(--bs-alert-border);
-    position: relative;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.5rem;
   }
-
   @@media (min-width: 768px) {
-    .calendar-grid { gap: @calGapDesktop; }
+    .calendar-grid { gap: 1rem; }
   }
 
-  /* Wrapper acts as the fixed grid placeholder */
   .day-wrapper {
     position: relative;
-    min-height: 130px;
-    border-radius: var(--bs-border-radius-lg);
-  }
-
-  /* Elevate the expanded wrapper so it overlaps adjacent cells smoothly */
-  .day-wrapper:has(.day-toggle:checked) {
-    z-index: 20;
-  }
-
-  /* The actual visually animated card */
-  .day-card-inner {
-    position: absolute;
-    inset: 0;
     display: flex;
-    background-color: var(--bs-tertiary-bg);
-    border: 1px solid var(--bs-border-color-translucent);
+    min-height: 110px;
     border-radius: var(--bs-border-radius-lg);
-    overflow: hidden;
-    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
-                transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                box-shadow 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+  }
+  @@media (min-width: 768px) {
+    .day-wrapper { min-height: 130px; }
   }
 
-  .day-wrapper:not(.empty) .day-card-inner:hover {
-    box-shadow: var(--bs-box-shadow);
-    border-color: var(--bs-primary);
-    background-color: var(--bs-secondary-bg);
-    z-index: 2;
-  }
-
-  .day-wrapper.empty .day-card-inner {
-    background-color: transparent;
+  .day-wrapper.empty {
     border: 1px dashed var(--bs-border-color);
+    background-color: transparent;
     opacity: 0.5;
   }
 
-  .day-toggle { display: none; }
-
-  /* Expanded State Configuration */
-  .day-toggle:checked ~ .day-card-inner {
-    /* Spans exactly 2 columns by adding the gap width */
-    width: calc(200% + @calGapMobile);
-    background-color: var(--bs-body-bg);
-    box-shadow: var(--bs-box-shadow-lg);
-    border-color: var(--bs-primary);
-    cursor: default;
+  /* Raise the z-index of ONLY the active wrapper */
+  .day-wrapper:has(.day-toggle:checked) {
+    z-index: 50;
   }
 
-  @@media (min-width: 768px) {
-    .day-toggle:checked ~ .day-card-inner {
-      width: calc(200% + @calGapDesktop);
-    }
-  }
-  /* Handle Saturday (7th Column): Expand to the Left instead of Right */
-  .day-wrapper:nth-of-type(7n) .day-card-inner {
-    left: auto;
-    right: 0;
+  /* 2. The Static Front Card */
+  .day-toggle {
+    display: none;
   }
 
-  .day-wrapper:nth-of-type(7n) .day-toggle:checked ~ .day-card-inner {
-    flex-direction: row-reverse;
-  }
-
-  /* Swap border sides for Saturday */
-  .day-wrapper:nth-of-type(7n) .day-expanded {
-    border-inline-start: none;
-    border-inline-end: 1px solid var(--bs-border-color-translucent);
-  }
-
-  /* Day Front: The original square content */
   .day-front {
     display: flex;
     flex-direction: column;
-    flex: 0 0 100%;
-    min-width: 100%;
+    width: 100%;
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius-lg);
     cursor: pointer;
-    transition: flex 0.5s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.2s ease;
+    overflow: hidden;
   }
 
-  /* Lock the front side to exactly 1 column width when expanded */
-  .day-toggle:checked ~ .day-card-inner .day-front {
-    flex: 0 0 calc(50% - (@calGapMobile / 2));
-    min-width: calc(50% - (@calGapMobile / 2));
-    cursor: default;
+  .day-front:hover {
+    border-color: var(--bs-primary);
+    box-shadow: var(--bs-box-shadow-sm);
   }
+
+  /* 3. The New Popout Overlay (Scaled down to 4x3 Grid Size) */
+  .day-popout {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    /* Width: 4 columns (400%) + 3 gaps (1.5rem) + 4px borders */
+    width: calc(400% + 1.5rem + 4px);
+    /* Height: 3 rows (300%) + 2 gaps (1rem) + 4px borders */
+    height: calc(300% + 1rem + 4px);
+    background-color: var(--bs-body-bg);
+    border: 2px solid var(--bs-primary);
+    border-radius: var(--bs-border-radius-lg);
+    box-shadow: var(--bs-box-shadow-lg);
+    display: flex;
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.95);
+    transform-origin: left top;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 100;
+  }
+
   @@media (min-width: 768px) {
-    .day-toggle:checked ~ .day-card-inner .day-front {
-      flex: 0 0 calc(50% - (@calGapDesktop / 2));
-      min-width: calc(50% - (@calGapDesktop / 2));
+    .day-popout {
+      /* Desktop gap is 1rem */
+      width: calc(400% + 3rem + 4px);
+      height: calc(300% + 2rem + 4px);
     }
   }
 
-  /* Day Expanded: The hidden agenda content */
-  .day-expanded {
-    flex: 1;
-    min-width: 0;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease 0.15s, visibility 0.3s ease 0.15s;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    border-inline-start: 1px solid var(--bs-border-color-translucent);
+  /* --- SMART EDGE DETECTION TO KEEP IT INSIDE THE CALENDAR --- */
+
+  /* Right-Edge Case: Thu, Fri, Sat pop out to the left */
+  .day-wrapper:nth-of-type(7n) .day-popout,
+  .day-wrapper:nth-of-type(7n-1) .day-popout,
+  .day-wrapper:nth-of-type(7n-2) .day-popout {
+    left: auto;
+    right: -2px;
+    transform-origin: right top;
+    flex-direction: row-reverse;
   }
 
-  /* Swap border sides for Saturday */
-  .day-wrapper:nth-child(7n) .day-expanded {
-    border-inline-start: none;
-    border-inline-end: 1px solid var(--bs-border-color-translucent);
+  /* Bottom-Edge Case: Last 14 elements (last 2 rows) expand UPWARDS */
+  .day-wrapper:nth-last-of-type(-n+14) .day-popout {
+    top: auto;
+    bottom: -2px;
+    transform-origin: left bottom;
   }
 
-  .day-toggle:checked ~ .day-card-inner .day-expanded {
+  /* Combined Bottom & Right Edge Case */
+  .day-wrapper:nth-last-of-type(-n+14):nth-of-type(7n) .day-popout,
+  .day-wrapper:nth-last-of-type(-n+14):nth-of-type(7n-1) .day-popout,
+  .day-wrapper:nth-last-of-type(-n+14):nth-of-type(7n-2) .day-popout {
+    transform-origin: right bottom;
+  }
+  
+  /* ----------------------------------------------------------- */
+
+  /* Trigger Popout */
+  .day-toggle:checked ~ .day-popout {
     opacity: 1;
     visibility: visible;
+    transform: scale(1);
+  }
+
+  /* Popout Internals */
+  .popout-half {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* The left 'cover' is now 1 column out of 4 (25%) */
+  .popout-left {
+    width: 25%;
+    border-right: 1px solid var(--bs-border-color-translucent);
+  }
+
+  /* The history panel gets the remaining 3 columns (75%) */
+  .popout-right {
+    width: 75%;
+  }
+
+  /* Reverse inner border for right-anchored popouts */
+  .day-wrapper:nth-of-type(7n) .popout-left,
+  .day-wrapper:nth-of-type(7n-1) .popout-left,
+  .day-wrapper:nth-of-type(7n-2) .popout-left {
+    border-right: none;
+    border-left: 1px solid var(--bs-border-color-translucent);
+  }
+
+  /* Invisible overlay to close the calendar when clicking the left side of the popout */
+  .close-trigger {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    cursor: pointer;
+    margin: 0;
   }
 
   /* Event Dots & Pure CSS Tooltips */
@@ -163,7 +184,7 @@
   }
 
   .event-dot {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     position: relative;
     cursor: help;
   }
@@ -184,7 +205,7 @@
     visibility: hidden;
     transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     white-space: nowrap;
-    z-index: 30;
+    z-index: 60;
     pointer-events: none;
   }
 
@@ -193,58 +214,16 @@
     visibility: visible;
     transform: translateX(-50%) scale(1);
   }
-
-  /* Hide tooltips when card is open to prevent visual clutter */
-  .day-toggle:checked ~ .day-card-inner .event-dot::after {
-    display: none;
-  }
-
-  /* Custom Scrollbar for expanded info */
-  .day-expanded::-webkit-scrollbar { width: 4px; }
-  .day-expanded::-webkit-scrollbar-thumb {
-    background-color: var(--bs-secondary-bg);
-    border-radius: 4px;
-  }
-
-  /* Invisible overlay that covers ONLY the original day square when expanded */
-  .close-card-overlay {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    /* Matches the width of the front square */
-    width: calc(50% - (@calGapMobile / 2));
-    z-index: 40;
-    cursor: pointer;
-    display: none;
-  }
-
-  @@media (min-width: 768px) {
-  .close-card-overlay {
-    width: calc(50% - (@calGapDesktop / 2));
-  }
-  }
-
-  /* Activate it when open */
-  .day-toggle:checked ~ .day-card-inner .close-card-overlay {
-    display: block;
-  }
-
-  /* Keep it perfectly aligned for the Saturday edge-case (which expands left) */
-  .day-wrapper:nth-of-type(7n) .close-card-overlay {
-    left: auto;
-    right: 0;
-  }
 </style>
 
 <div class="calendar-wrapper container-fluid p-3 p-md-4 h-100 d-flex flex-column rounded-4 border shadow-sm">
-  
+
   <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
     <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-2" style="width: 40px; height: 40px;">
       <i class="bi bi-chevron-left"></i>
     </button>
     <div class="text-center">
-      <h2 class="mb-0 fw-bold tracking-tight">October 2026</h2>
+      <h2 class="mb-0 fw-bold tracking-tight">@now.ToString("MMMM yyyy")</h2>
       <span class="text-muted small">Event Schedule</span>
     </div>
     <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-2" style="width: 40px; height: 40px;">
@@ -253,97 +232,88 @@
   </header>
 
   <div class="calendar-grid mb-2 text-center fw-semibold text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">
-    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+    <div>Sun</div>
+    <div>Mon</div>
+    <div>Tue</div>
+    <div>Wed</div>
+    <div>Thu</div>
+    <div>Fri</div>
+    <div>Sat</div>
   </div>
 
   <div class="calendar-grid flex-grow-1">
-    
+
     <input type="radio" name="calendar-day" id="close-calendar" class="global-close-radio" checked>
 
-    <div class="day-wrapper empty"><div class="day-card-inner"></div></div>
-    <div class="day-wrapper empty"><div class="day-card-inner"></div></div>
-    <div class="day-wrapper empty"><div class="day-card-inner"></div></div>
-    <div class="day-wrapper empty"><div class="day-card-inner"></div></div>
+    @for (var i = 0; i < startDayOffset; i++)
+    {
+    <div class="day-wrapper empty"></div>
+    }
+
+    @for (var index = 1; index <= daysInCurrentMonth; index++)
+    {
+    var currentLog = logs.Where(l => l.DateTime?.Day == index).ToList();
+    var isToday = (index == now.Day);
 
     <div class="day-wrapper">
-      <input type="radio" name="calendar-day" id="day-1" class="day-toggle">
-      <div class="day-card-inner">
-        
-        <label for="day-1" class="day-front p-2 p-md-3 m-0">
-          <span class="fs-5 fw-bold text-body-secondary">1</span>
-        </label>
-        
-        <div class="day-expanded p-3 bg-body-tertiary">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="mb-0 fw-bold text-muted">October 1</h6>
-            <label for="close-calendar" class="btn-close btn-close-sm" style="cursor:pointer;"></label>
+      <input type="radio" name="calendar-day" id="day-@index" class="day-toggle">
+
+      <label class="day-front p-2 p-md-3 m-0 @(isToday ? "border-primary bg-primary-subtle" : "")" for="day-@index">
+        <span class="fs-5 fw-bold @(isToday ? "text-primary" : "")">@(index.ToString("00"))</span>
+
+        <div class="event-dots-container">
+          @if (currentLog.Any())
+          {
+          <i class="bi bi-square-fill text-success event-dot" data-category="Log-Present"></i>
+          @if (currentLog.Any(l => l.WasMilkConsumed == true)) { <i class="bi bi-triangle-fill text-danger event-dot" data-category="Milk-Consumed"></i> }
+          @if (currentLog.Any(l => l.WasCoffeeConsumed == true)) { <i class="bi bi-circle-fill text-primary event-dot" data-category="Caffe-Consumed"></i> }
+          }
+        </div>
+      </label>
+
+      <div class="day-popout">
+
+        <div class="popout-half popout-left p-2 p-md-3 bg-secondary-subtle">
+          <label class="close-trigger" for="close-calendar" title="Close"></label>
+          <span class="fs-5 fw-bold text-primary">@(index.ToString("00"))</span>
+
+          <div class="event-dots-container">
+            @if (currentLog.Any())
+            {
+            <i class="bi bi-square-fill text-success" style="font-size: 0.7rem;"></i>
+            @if (currentLog.Any(l => l.WasMilkConsumed == true)) { <i class="bi bi-triangle-fill text-danger" style="font-size: 0.7rem;"></i> }
+            @if (currentLog.Any(l => l.WasCoffeeConsumed == true)) { <i class="bi bi-circle-fill text-primary" style="font-size: 0.7rem;"></i> }
+            }
           </div>
-          <p class="text-muted small mb-0">No events scheduled.</p>
         </div>
 
-      </div>
-    </div>
-
-    <div class="day-wrapper">
-      <input type="radio" name="calendar-day" id="day-2" class="day-toggle">
-      <div class="day-card-inner">
-        
-        <label for="close-calendar" class="close-card-overlay" title="Close"></label>
-
-        <label for="day-2" class="day-front p-2 p-md-3 m-0">
-          <span class="fs-5 fw-bold">2</span>
-          <div class="event-dots-container">
-            <i class="bi bi-circle-fill text-primary event-dot" data-category="Meeting"></i>
-            <i class="bi bi-triangle-fill text-danger event-dot" data-category="Deadline"></i>
+        <div class="popout-half popout-right bg-body-tertiary">
+          <div class="p-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+            <span class="fw-bold small text-primary mb-0">History</span>
+            <label for="close-calendar" class="text-muted m-0" style="cursor: pointer;"><i class="bi bi-x-lg"></i></label>
           </div>
-        </label>
-        
-        <div class="day-expanded bg-body-tertiary d-flex flex-column h-100">
-          
-          <label for="close-calendar" class="p-3 mb-0 d-flex justify-content-between align-items-center border-bottom border-light" style="cursor: pointer; background-color: rgba(0,0,0,0.02);">
-            <h6 class="mb-0 fw-bold text-primary">Agenda</h6>
-            <i class="bi bi-chevron-contract text-muted small"></i>
-          </label>
 
-          <ul class="list-group list-group-flush small bg-transparent p-3 pt-2 overflow-y-auto">
-            <li class="list-group-item bg-transparent px-0 py-2 border-bottom-dashed">
-              <span class="badge text-bg-primary rounded-pill me-1 d-inline-block" style="width: 60px;">10:00</span> Project Kickoff
+          <ul class="list-group list-group-flush small overflow-y-auto mb-0" style="flex: 1;">
+            @if (!currentLog.Any())
+            {
+            <li class="list-group-item bg-transparent text-muted fst-italic border-0 px-3 py-2">No logs for today.</li>
+            }
+            else
+            {
+            @foreach (var log in currentLog)
+            {
+            <li class="list-group-item bg-transparent px-3 py-2 border-bottom-dashed d-flex align-items-center gap-2">
+              <span class="badge text-bg-primary rounded-pill">@log.DateTime?.TimeOfDay.ToString(@"hh\:mm")</span>
+              <span class="fw-semibold">@((int)log.BowelMovementType)</span>
             </li>
-            <li class="list-group-item bg-transparent px-0 py-2 border-bottom-dashed">
-              <span class="badge text-bg-danger rounded-pill me-1 d-inline-block" style="width: 60px;">17:00</span> Final Delivery
-            </li>
-          </ul>
-          
-        </div>
-
-      </div>
-    </div>
-
-    <div class="day-wrapper">
-      <input type="radio" name="calendar-day" id="day-3" class="day-toggle">
-      <div class="day-card-inner">
-        
-        <label for="day-3" class="day-front p-2 p-md-3 m-0">
-          <span class="fs-5 fw-bold text-danger">3</span>
-          <div class="event-dots-container">
-            <i class="bi bi-square-fill text-success event-dot" data-category="Personal"></i>
-          </div>
-        </label>
-        
-        <div class="day-expanded p-3 bg-body-tertiary">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="mb-0 fw-bold text-success">Personal Time</h6>
-            <label for="close-calendar" class="btn-close btn-close-sm" style="cursor:pointer;"></label>
-          </div>
-          <ul class="list-group list-group-flush small">
-            <li class="list-group-item bg-transparent px-0 py-2">
-              <span class="badge text-bg-success rounded-pill me-1">All Day</span> Family Trip to Mountains
-            </li>
+            }
+            }
           </ul>
         </div>
 
       </div>
     </div>
+    }
 
   </div>
 </div>

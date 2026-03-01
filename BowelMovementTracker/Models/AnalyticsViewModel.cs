@@ -5,6 +5,7 @@ namespace BowelMovementTracker.Models;
 public class AnalyticsViewModel
 {
     public Guid UserIdentifier { get; init; }
+    public int daysInCurrentMonth  { get; set; }
 
     // This is your master list of ALL logs from the database
     public required List<LogItemsViewModel> AllLogItems { get; set; }
@@ -47,7 +48,7 @@ public class AnalyticsViewModel
 
         // Telescoping Sum ((Max - Min) / (Count - 1)) - allows to bypass all of that heavy lifting of using LINQ.Average()
         var totalSpan = maxDate - minDate ?? TimeSpan.Zero;
-        var averageTicks = totalSpan.Ticks / (FilteredDashboardLogs.Count - 1);
+        var averageTicks = Math.Abs(totalSpan.Ticks / (FilteredDashboardLogs.Count - 1)); 
 
         return TimeSpan.FromTicks(averageTicks);
     }

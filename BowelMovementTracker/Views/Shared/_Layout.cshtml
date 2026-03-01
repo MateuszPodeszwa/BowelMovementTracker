@@ -47,8 +47,12 @@
                     @if (User.Identity is { IsAuthenticated: true })
                     {
                         <li class="nav-item">
-                            <a class="nav-link" asp-route-id="@User.FindFirstValue(ClaimTypes.NameIdentifier)"
+                            <a class="nav-link" asp-route-userid="@User.FindFirstValue(ClaimTypes.NameIdentifier)"
                                asp-route="AnalyticsDashboard">Analytics</a>
+                        </li>
+                        <li class="nav-item disabled">
+                            <a class="nav-link" asp-route-userid="@User.FindFirstValue(ClaimTypes.NameIdentifier)"
+                               asp-route="AnalyticsCalendar">Calendar</a>
                         </li>
                     }
 
