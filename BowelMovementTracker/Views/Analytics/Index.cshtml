@@ -32,7 +32,7 @@
                     var isSelected = currentlySelectedFilterInt.Equals(x);
 
                     <a asp-route="AnalyticsDashboard"
-                       asp-route-id="@Model.UserIdentifier"
+                       asp-route-userid="@Model.UserIdentifier"
                        asp-route-tPeriod="@x"
                        class="btn btn-outline-primary @(isSelected ? "active btn-info" : "")>">
                         @(x switch
@@ -70,7 +70,10 @@
             <div class="card border-0 shadow-sm bg-body-tertiary h-100 rounded-4">
                 <div class="card-body p-4 text-center">
                     <h6 class="text-body-secondary text-uppercase small fw-bold tracking-wide">Avg Gap (Hours)</h6>
-                    <h2 class="display-5 fw-bold text-warning mb-0">@Model.GetFilteredAverageLogTimeSpan().Hours</h2>
+                    @{
+                        var totalHours = Model.GetFilteredAverageLogTimeSpan().TotalHours;
+                    }
+                    <h2 class="display-5 fw-bold text-warning mb-0">@Math.Round(totalHours, 2)</h2> @*IMPORTANT! Always use TotalHours, TotalDays etc... Never Days or Hours.*@
                 </div>
             </div>
         </div>
