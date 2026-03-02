@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
 using System.Security.Claims;
 using BowelMovementTracker.Data;
 using BowelMovementTracker.Data.Enums;
@@ -13,14 +14,9 @@ namespace BowelMovementTracker.Controllers;
 
 public class AnalyticsController(BowelMovementTrackerContext context) : Controller
 {
-    [HttpGet("/{userid:guid}/Calendar", Name = "AnalyticsCalendar"), Authorize]
+    [HttpGet("/{userid:guid?}/Calendar", Name = "AnalyticsCalendar"), Authorize]
     public async Task<IActionResult> Calendar([FromRoute] Guid? userid)
     {
-        // Deconstruct NOW into Y/M/D
-        var (year, month, currentDayInt) = DateTime.UtcNow;
-        // Get current month duration (necessary for printing calendar fields)
-        var daysInCurrentMonth = DateTime.DaysInMonth(year, month);
-
         // Authenticate & Authorize User 
         var loggedInUserIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -51,15 +47,33 @@ public class AnalyticsController(BowelMovementTrackerContext context) : Controll
             WasMilkConsumed = log.LogWasMilkConsumed ?? false,
             Notes = log.LogNotes ?? ""
         }).ToList();
-        
+
         var viewModel = new AnalyticsViewModel
         {
             AllLogItems = userLogsMapList,
-            UserIdentifier = loggedInUserId,
-            daysInCurrentMonth = daysInCurrentMonth,
+            UserIdentifier = loggedInUserId
         };
-
+        
         return View(viewModel);
+    }
+
+    [HttpPost("Analytics/UpdateDate")]
+    [ValidateAntiForgeryToken]
+    public IActionResult UpdateDate([FromForm] string currentDate, [FromForm] string direction)
+    {
+        // Safely parse the exact format you are passing from the form
+        var date = DateTime.ParseExact(currentDate, "MM/dd/yyyy", CultureInfo.InvariantCulture);
+    
+        DateTime newDate = direction switch
+        {
+            "back" => date.AddMonths(-1),
+            "forward" => date.AddMonths(1),
+            _ => DateTime.UtcNow
+        };
+    
+        TempData["now"] = newDate.ToString("MM/dd/yyyy");
+    
+        return RedirectToRoute("AnalyticsCalendar", new { userid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value });
     }
 
     [HttpGet("/{userid:guid}/Analytics", Name = "AnalyticsDashboard"), Authorize]
