@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Security.Claims;
 using BowelMovementTracker.Data;
 using BowelMovementTracker.Data.Enums;
+using BowelMovementTracker.Data.Services.SecurityService;
 using BowelMovementTracker.Models;
 using Humanizer;
 using Microsoft.AspNetCore.Authorization;
@@ -12,18 +13,22 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace BowelMovementTracker.Controllers;
 
-public class AnalyticsController(BowelMovementTrackerContext context) : Controller
+public class AnalyticsController(BowelMovementTrackerContext context, IGuard securityService) : Controller
 {
     [HttpGet("/{userid:guid?}/Calendar", Name = "AnalyticsCalendar"), Authorize]
     public async Task<IActionResult> Calendar([FromRoute] Guid? userid)
     {
-        // Authenticate & Authorize User 
-        var loggedInUserIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userid == null)
+        {
+            return NotFound();
+        }
+        
+        var guardResults = securityService.ValidateOrRedirect(userid.Value);
 
-        // Safety catch
-        if (!Guid.TryParse(loggedInUserIdStr, out Guid loggedInUserId)) return Unauthorized();
-        if (!userid.HasValue) return NotFound();
-        if (userid.Value != loggedInUserId) return Forbid();
+        if (guardResults != null)
+        {
+            return guardResults;
+        }
 
         User? user = await context.User
             .Include(d => d.Diary)
@@ -51,7 +56,7 @@ public class AnalyticsController(BowelMovementTrackerContext context) : Controll
         var viewModel = new AnalyticsViewModel
         {
             AllLogItems = userLogsMapList,
-            UserIdentifier = loggedInUserId
+            UserIdentifier = userid.Value,
         };
         
         return View(viewModel);
@@ -81,27 +86,16 @@ public class AnalyticsController(BowelMovementTrackerContext context) : Controll
         [FromRoute] Guid? userid,
         [FromQuery(Name = "tPeriod")] int? tPeriod)
     {
-        // Ensure only logged user can access their data
-        // If the user ID from route matches the logged user ID, allow. Otherwise, restrict.
-        // TODO: DRY: Encapsulate this (Reused from HomeController)
-        // Retrieve the logged-in user's ID from the cookie claims
-        var loggedInUserIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (!Guid.TryParse(loggedInUserIdStr, out Guid loggedInUserId))
-        {
-            // Safety catch: if the cookie is malformed or missing the ID claim
-            return Unauthorized();
-        }
-
-        if (!userid.HasValue)
+        if (userid == null)
         {
             return NotFound();
         }
+        
+        var guardResults = securityService.ValidateOrRedirect(userid.Value);
 
-        // If an ID was provided in the URL, verify it matches the logged-in user
-        if (userid.Value != loggedInUserId)
+        if (guardResults != null)
         {
-            return Forbid(); // HTTP 403: They are trying to view someone else's dashboard
+            return guardResults;
         }
 
         int[] allowedTimeFilters = [7, 30, 365]; // Days
@@ -109,7 +103,7 @@ public class AnalyticsController(BowelMovementTrackerContext context) : Controll
         if (tPeriod == null || !allowedTimeFilters.Contains(tPeriod.Value))
         {
             return RedirectToRoute("AnalyticsDashboard",
-                new { userid = loggedInUserId, tPeriod = allowedTimeFilters[0] });
+                new { userid = userid.Value, tPeriod = allowedTimeFilters[0] });
         }
 
         ViewData["RequestedTimePeriodInt"] = tPeriod.Value;
@@ -142,7 +136,7 @@ public class AnalyticsController(BowelMovementTrackerContext context) : Controll
         var viewModel = new AnalyticsViewModel
         {
             AllLogItems = userLogsMapList,
-            UserIdentifier = loggedInUserId,
+            UserIdentifier = userid.Value,
         };
 
         return View(viewModel);

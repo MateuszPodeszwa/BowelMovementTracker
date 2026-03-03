@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using BowelMovementTracker.Data;
+using BowelMovementTracker.Data.Services.PasswordService;
+using BowelMovementTracker.Data.Services.SecurityService;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace BowelMovementTracker
@@ -30,6 +32,10 @@ namespace BowelMovementTracker
                         : CookieSecurePolicy.Always; // Require HTTPS in production
                     options.Cookie.SameSite = SameSiteMode.Strict; // Prevent CSRF attacks
                 });
+            
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<IPasswordService, PasswordService>();
+            builder.Services.AddScoped<IGuard, SecurityService>();
 
             var app = builder.Build();
 

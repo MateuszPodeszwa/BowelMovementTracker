@@ -6,20 +6,23 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
+using BowelMovementTracker.Data.Services.PasswordService;
+
 // ReSharper disable ArrangeObjectCreationWhenTypeNotEvident
 
 namespace BowelMovementTracker.Controllers;
 
 [Authorize] // Secures all actions in this controller by default
-public class UsersController(BowelMovementTrackerContext context) : Controller
+public class UsersController(BowelMovementTrackerContext context, IPasswordService passwordService) : Controller
 {
     [AllowAnonymous] // Allows unauthenticated users to see the login page
     [HttpGet("/Login", Name = "LoginRoute")]
     public IActionResult Login()
     {
         var isUserLoggedIn = User.Identity is { IsAuthenticated: true };
-        if (isUserLoggedIn) return Redirect("/");
-        
+        if (isUserLoggedIn)
+            return RedirectToRoute("UserHome", new { id = User.FindFirst(ClaimTypes.NameIdentifier)?.Value });
+
         return View();
     }
 
@@ -35,13 +38,17 @@ public class UsersController(BowelMovementTrackerContext context) : Controller
 
         if (!ModelState.IsValid) return View("Login", boundUser);
 
-        User? user = await context.User.FirstOrDefaultAsync(m =>
-            (m.UserEmailAddress == boundUser.UserEmailAddress) &&
-            (m.UserPasswordHash == boundUser.UserPasswordHash));
+        User? user = await context.User.FirstOrDefaultAsync(m => m.UserEmailAddress == boundUser.UserEmailAddress);
 
         if (user == null)
         {
             // It is safer to use a generic error message to prevent email enumeration
+            ModelState.AddModelError(string.Empty, "Could not find user.");
+            return View("Login", boundUser);
+        }
+
+        if (!passwordService.VerifyPassword(user.UserPasswordHash, plainTextPassword: boundUser.UserPasswordHash))
+        {
             ModelState.AddModelError(string.Empty, "Invalid login attempt.");
             return View("Login", boundUser);
         }
@@ -87,7 +94,7 @@ public class UsersController(BowelMovementTrackerContext context) : Controller
     {
         // Remove Diary to avoid problems
         ModelState.Remove("Diary");
-        
+
         // Check if there's any User with that eMail
         var user = await context.User.FirstOrDefaultAsync(user =>
             user.UserEmailAddress == userRegisterData.UserEmailAddress);
@@ -97,10 +104,11 @@ public class UsersController(BowelMovementTrackerContext context) : Controller
             ModelState.AddModelError("UserEmailAddress", "Email is already in use.");
             return View("Register", userRegisterData);
         }
-        
+
         // Restrict Registration to specific user addresses, to ensure a specific group of people can register.
         // This hardcoded functionality is temporary.
-        string[] userMail = [
+        string[] userMail =
+        [
             "guest1@example.com",
             "guest2@example.com",
             "guest3@example.com",
@@ -114,14 +122,14 @@ public class UsersController(BowelMovementTrackerContext context) : Controller
         {
             ModelState.AddModelError(string.Empty, "Illegal Operation.");
         }
-        
+
         // Return all issues before creating Database Object
         if (!ModelState.IsValid) return View("Register", userRegisterData);
 
         User userDbObject = new()
         {
             UserEmailAddress = userRegisterData.UserEmailAddress,
-            UserPasswordHash = userRegisterData.UserPasswordHash,
+            UserPasswordHash = passwordService.HashPassword(userRegisterData.UserPasswordHash),
 
             Diary = new()
             {

@@ -3,12 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Security.Claims;
 using BowelMovementTracker.Data;
+using BowelMovementTracker.Data.Services.SecurityService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace BowelMovementTracker.Controllers;
 
-public class HomeController(BowelMovementTrackerContext context) : Controller
+public class HomeController(BowelMovementTrackerContext context, IGuard securityService) : Controller
 {
     // Custom Routing Templates
     [
@@ -22,26 +23,16 @@ public class HomeController(BowelMovementTrackerContext context) : Controller
         [FromQuery(Name = "date")] DateTime? requestedDate
     )
     {
-        // Authorization and Security
-        // Retrieve the logged-in user's ID from the cookie claims
-        var loggedInUserIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        
-        if (!Guid.TryParse(loggedInUserIdStr, out Guid loggedInUserId))
+        if (userIdentifier == null)
         {
-            // Safety catch: if the cookie is malformed or missing the ID claim
-            return Unauthorized(); 
+            return RedirectToRoute("LoginRoute");
         }
         
-        if (!userIdentifier.HasValue)
+        var guardResults = securityService.ValidateOrRedirect(userIdentifier.Value);
+
+        if (guardResults != null)
         {
-            // Preserve the requestedDate query parameter if they provided one
-            return RedirectToRoute("UserHome", new { id = loggedInUserId, date = requestedDate });
-        }
-        
-        // If an ID was provided in the URL, verify it matches the logged-in user
-        if (userIdentifier.Value != loggedInUserId)
-        {
-            return Forbid(); // HTTP 403: They are trying to view someone else's dashboard
+            return guardResults;
         }
         
         // Ensure there's always a date parameter in URL - Get Current UTC
