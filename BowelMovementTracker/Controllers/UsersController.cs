@@ -109,18 +109,14 @@ public class UsersController(BowelMovementTrackerContext context, IPasswordServi
         // This hardcoded functionality is temporary.
         string[] userMail =
         [
-            "guest1@example.com",
-            "guest2@example.com",
-            "guest3@example.com",
-            "guest4@example.com",
-            "guest5@example.com"
+            "podinatubie@gmail.com"
         ];
 
         var any = userMail.Any(mail => mail == userRegisterData.UserEmailAddress);
 
         if (!any)
         {
-            ModelState.AddModelError(string.Empty, "Illegal Operation.");
+            ModelState.AddModelError(string.Empty, "Email is not permitted.");
         }
 
         // Return all issues before creating Database Object
