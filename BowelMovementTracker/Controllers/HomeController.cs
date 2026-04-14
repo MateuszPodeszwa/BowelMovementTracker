@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Security.Claims;
 using BowelMovementTracker.Data;
-using BowelMovementTracker.Data.Services.SecurityService;
+using BowelMovementTracker.Data.Services.UserSecurity;
+using BowelMovementTracker.Data.Services.UserSecurity.PageSecurity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace BowelMovementTracker.Controllers;
 
-public class HomeController(BowelMovementTrackerContext context, IGuard securityService) : Controller
+public class HomeController(BowelMovementTrackerContext context, IProtect securityService) : Controller
 {
     // Custom Routing Templates
     [

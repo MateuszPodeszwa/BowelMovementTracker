@@ -2,7 +2,7 @@
 
 namespace BowelMovementTracker.Data;
 
-public class Diary
+public class Diary 
 {
     [Key]
     public Guid DiaryIdentifier { get; init; }

@@ -2,18 +2,16 @@
 using System.Globalization;
 using System.Security.Claims;
 using BowelMovementTracker.Data;
-using BowelMovementTracker.Data.Enums;
-using BowelMovementTracker.Data.Services.SecurityService;
+using BowelMovementTracker.Data.Services.UserSecurity;
+using BowelMovementTracker.Data.Services.UserSecurity.PageSecurity;
 using BowelMovementTracker.Models;
-using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 
 namespace BowelMovementTracker.Controllers;
 
-public class AnalyticsController(BowelMovementTrackerContext context, IGuard securityService) : Controller
+public class AnalyticsController(BowelMovementTrackerContext context, IProtect securityService) : Controller
 {
     [HttpGet("/{userid:guid?}/Calendar", Name = "AnalyticsCalendar"), Authorize]
     public async Task<IActionResult> Calendar([FromRoute] Guid? userid)

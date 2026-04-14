@@ -6,14 +6,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
-using BowelMovementTracker.Data.Services.PasswordService;
+using BowelMovementTracker.Data.Services.UserSecurity;
 
 // ReSharper disable ArrangeObjectCreationWhenTypeNotEvident
 
 namespace BowelMovementTracker.Controllers;
 
 [Authorize] // Secures all actions in this controller by default
-public class UsersController(BowelMovementTrackerContext context, IPasswordService passwordService) : Controller
+public class UsersController(BowelMovementTrackerContext context, IProtect securityService) : Controller
 {
     [AllowAnonymous] // Allows unauthenticated users to see the login page
     [HttpGet("/Login", Name = "LoginRoute")]
@@ -47,7 +47,7 @@ public class UsersController(BowelMovementTrackerContext context, IPasswordServi
             return View("Login", boundUser);
         }
 
-        if (!passwordService.VerifyPassword(user.UserPasswordHash, plainTextPassword: boundUser.UserPasswordHash))
+        if (!securityService.Verify(user.UserPasswordHash, plainText: boundUser.UserPasswordHash))
         {
             ModelState.AddModelError(string.Empty, "Invalid login attempt.");
             return View("Login", boundUser);
@@ -125,7 +125,7 @@ public class UsersController(BowelMovementTrackerContext context, IPasswordServi
         User userDbObject = new()
         {
             UserEmailAddress = userRegisterData.UserEmailAddress,
-            UserPasswordHash = passwordService.HashPassword(userRegisterData.UserPasswordHash),
+            UserPasswordHash = securityService.Hash(userRegisterData.UserPasswordHash),
 
             Diary = new()
             {

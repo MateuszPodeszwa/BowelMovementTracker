@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using BowelMovementTracker.Data.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace BowelMovementTracker.Data;
 
