@@ -1,8 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using BowelMovementTracker.Data;
-using BowelMovementTracker.Data.Services.PasswordService;
-using BowelMovementTracker.Data.Services.SecurityService;
+using BowelMovementTracker.Data.Services.DatabaseRepositoryService;
+using BowelMovementTracker.Data.Services.DatabaseRepositoryService.UserRepository;
+using BowelMovementTracker.Data.Services.UserSecurity;
+using BowelMovementTracker.Data.Services.UserSecurity.EncryptionService;
+using BowelMovementTracker.Data.Services.UserSecurity.PageSecurity;
+using BowelMovementTracker.Data.Services.UserSecurity.PasswordService;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace BowelMovementTracker
@@ -33,9 +37,19 @@ namespace BowelMovementTracker
                     options.Cookie.SameSite = SameSiteMode.Strict; // Prevent CSRF attacks
                 });
             
+            var encryptionKey = builder.Configuration["SecuritySettings:EncryptionKey"];
+
+            if (string.IsNullOrEmpty(encryptionKey))
+            {
+                throw new InvalidOperationException("Encryption key is missing from configuration.");
+            }
             builder.Services.AddHttpContextAccessor();
-            builder.Services.AddScoped<IPasswordService, PasswordService>();
-            builder.Services.AddScoped<IGuard, SecurityService>();
+            builder.Services.AddSingleton<IPasswordStrategy, IdentityPasswordStrategy>();
+            builder.Services.AddSingleton<IEncryptionStrategy>(new AesEncryptionStrategy(encryptionKey));
+            builder.Services.AddScoped<IGuard, PageUserAuthenticator>();
+            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<IProtect, SecurityService>();
 
             var app = builder.Build();
 
