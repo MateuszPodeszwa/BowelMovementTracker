@@ -1,10 +1,10 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BowelMovementTracker.Data.Services.SecurityService;
+namespace BowelMovementTracker.Data.Services.UserSecurity.PageSecurity;
 
 // Ensures that only "we" can enter the "our" page. For example, if user requests page of other user, it should validate the ownership.
-public class SecurityService(IHttpContextAccessor httpContextAccessor) : IGuard
+public class PageUserAuthenticator(IHttpContextAccessor httpContextAccessor) : IGuard
 {
 
     public IActionResult? ValidateOrRedirect(Guid userIdentifier)
@@ -14,7 +14,7 @@ public class SecurityService(IHttpContextAccessor httpContextAccessor) : IGuard
         // Ensure "we" are the web request.
         if (context == null)
         {
-            throw new InvalidOperationException("SecurityService cannot be used outside an HTTP Request.");
+            throw new InvalidOperationException("PageUserAuthenticator cannot be used outside an HTTP Request.");
         }
 
         var user = context.User;
@@ -27,7 +27,7 @@ public class SecurityService(IHttpContextAccessor httpContextAccessor) : IGuard
 
             // This should never happen if [Authorize] is used correctly.
             // Throw an error to alert the DEVELOPER that you forgot the attribute.
-            throw new InvalidOperationException("SecurityService requires an authenticated user.");
+            throw new InvalidOperationException("PageUserAuthenticator requires an authenticated user.");
         }
 
         // Retrieve UID stored in the Cookie

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace BowelMovementTracker.Data.Services.SecurityService;
+namespace BowelMovementTracker.Data.Services.UserSecurity.PageSecurity;
 
 public interface IGuard
 {
